@@ -26,7 +26,8 @@ a completed flagship release**. The following distinctions are intentional.
 - Automated UI/navigation/GLB checks and WCAG A/AA checks on the main views in both
   themes. These do not replace a native screen-reader audit.
 - Native GTK/WebKit AT-SPI actions confirm folder consent, real note creation,
-  memory storage/deletion and grant revocation against temporary fixture data.
+  memory editing/deletion, broker-backed diagnostic export and grant revocation
+  against temporary fixture data, including the extracted Debian application.
 - Native build and Debian/RPM package generation with bundled Node/OpenClaw. Both
   payloads contain verified archive hashes, ELF executables and desktop entries.
   The extracted runtime authenticates using its bundled Node executable. Exact final
@@ -37,6 +38,7 @@ a completed flagship release**. The following distinctions are intentional.
 | Environment / capability | Classification | Evidence / limit |
 | --- | --- | --- |
 | Debian 13.6 x86_64, GTK 3.24.49, WebKitGTK 2.54.0, Xvfb | Limited, tested development environment | Native window, GLB and UI smoke evidence; software graphics, not a normal desktop session |
+| Packaged GUI → managed Gateway under PRoot | Validation blocked / unresolved | Native cold connection times out in this wrapper; the same bundled runtime and stdio lifecycle authenticate when launched directly on the host |
 | GNOME Wayland top-edge pet | Not implemented / not tested | Requires compositor extension/placement proof and real hardware/session tests |
 | KDE Plasma Wayland top-edge pet | Not implemented / not tested | Layer-shell creation and lifecycle proof missing |
 | Real GNOME/KDE/XFCE X11 desktop | Not tested | Xvfb smoke testing does not satisfy the flagship baseline |

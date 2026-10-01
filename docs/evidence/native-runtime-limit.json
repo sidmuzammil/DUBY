@@ -1,0 +1,9 @@
+{
+  "passed": false,
+  "check": "Packaged GUI to managed Gateway connection",
+  "environment": "Debian 13.6, Xvfb, PRoot-mapped WebKitGTK helpers",
+  "observed": "The GUI connection timed out; extending the initial Gateway connection retry window did not make this complete in the native wrapper.",
+  "comparison": "The same bundled Node/OpenClaw installation authenticates in direct host execution and through the stdio init/connect/shutdown interface used by Rust.",
+  "cause": "Unresolved; the wrapper also emits filesystem EFAULT errors. A normal Linux desktop must be tested before declaring the GUI AI path verified.",
+  "liveInference": false
+}

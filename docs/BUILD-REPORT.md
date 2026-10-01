@@ -17,15 +17,19 @@ No payments, hosted model calls or billable CI runs were made.
 | Streaming file-task fixture | Read/find/create through real Gateway, plugin and Rust broker; interleaved arguments |
 | Alternate execution route | Model-requested `exec` denied, no mutation |
 | Credential residue | No fixture keys in 18 generated runtime files |
-| Native UI | Folder confirmation, actual note creation, memories and revocation exercised through GTK/WebKit/AT-SPI |
+| Native packaged UI | Folder confirmation, actual note creation, memory editing/deletion, diagnostic export and revocation passed through GTK/WebKit/AT-SPI |
 | Linux installer payloads | Debian and RPM executable, desktop entry and runtime archive hashes verified |
 | Bundled Node/OpenClaw | Authentication passed using the bundled executable |
+| Rust-style bridge protocol | Bundled stdio init/connect/shutdown passed |
 | Cloud setup | Repeated successfully; reusable environment configuration draft saved |
 
 Detailed machine-readable reports and screenshots are in `evidence/`. Local model
 fixtures are clearly labeled; they do not establish live model quality or paid-provider
 compatibility. The native test environment is Xvfb with software graphics, not a real
 GNOME/KDE Wayland desktop. Installer hashes are in `evidence/packages.json`.
+The full packaged GUI-to-Gateway path times out under the PRoot wrapper and remains
+an explicit validation gap; it must be retested on a normal Linux desktop. This
+failed check is retained in `evidence/native-runtime-limit.json`.
 
 ## Publication and remaining work
 

@@ -71,6 +71,7 @@ export class Runtime {
         );
     }
     await mkdir(data + "/workspace", { recursive: true, mode: 0o700 });
+    await mkdir(data + "/logs", { recursive: true, mode: 0o700 });
     const configPath = data + "/openclaw.json";
     await writeFile(configPath, JSON.stringify(config, null, 2), {
       mode: 0o600,

@@ -29,6 +29,9 @@ This is an unprivileged alpha, with a deliberately small enabled tool surface.
   supported SecretRefs; ordinary config contains references, not secret values.
   Child environments are explicitly constructed, not copied wholesale. Arbitrary
   tool subprocesses and third-party executable plugins are disabled.
+- Runtime diagnostic content logging and telemetry are disabled. Any configured
+  runtime log path stays inside Duby's private state; conversation history remains
+  runtime-owned application data and is not part of diagnostic exports.
 - CSP limits scripts/assets and native IPC. Provider content is rendered as text.
   No secret values or document contents enter diagnostic exports.
 

@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "protocol": 4,
+  "boundary": "Bundled Node stdio init/connect/shutdown, as used by Rust",
+  "liveInference": false
+}

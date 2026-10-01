@@ -73,6 +73,10 @@ be restarted after restoring a cloud snapshot. Do not treat PRoot or Xvfb as an
 application sandbox or as a real GNOME/KDE compatibility test. This old PRoot build
 causes filesystem-metadata errors in GTK's folder picker; the native-confirmed path
 entry is provided as a fallback. No WebKit sandbox-disable flags were used.
+The packaged GUI's managed Gateway connection also times out under this PRoot
+wrapper. Direct bundled-runtime and stdio lifecycle tests pass on the host; the
+complete GUI-to-Gateway path still needs validation on a normal Linux desktop.
+PRoot emits filesystem `EFAULT` errors and is not a supported end-user deployment.
 
 ## Packaging
 

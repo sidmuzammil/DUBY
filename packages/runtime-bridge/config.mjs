@@ -74,6 +74,16 @@ export function runtimeConfig(input, { data, port, plugin }) {
   return {
     key,
     config: {
+      // Keep any runtime log path inside Duby's private state, including startup.
+      logging: {
+        level: "silent",
+        consoleLevel: "silent",
+        file: data + "/logs/gateway.log",
+      },
+      diagnostics: {
+        enabled: false,
+        otel: { enabled: false, captureContent: false },
+      },
       gateway: {
         mode: "local",
         bind: "loopback",

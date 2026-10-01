@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "ready": true,
+  "protocol": 4,
+  "provider": "ollama",
+  "model": "qwen3:8b",
+  "inferenceTested": false,
+  "summary": "Runtime connected. Model inference is checked when you send a task.",
+  "bundledNode": "v24.19.0",
+  "liveInference": false,
+  "environment": "Bundled runtime executed on the host outside PRoot"
+}

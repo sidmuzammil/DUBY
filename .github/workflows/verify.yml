@@ -1,0 +1,35 @@
+name: Verify Duby (manual)
+# Deliberately manual: onboarding must not trigger paid CI usage.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Native prerequisites
+        run: sudo apt-get update && sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libssl-dev zstd
+      - name: Rust
+        run: rustup toolchain install 1.99.0 --profile minimal --component clippy,rustfmt && rustup default 1.99.0
+      - run: npm ci
+      - run: npm run check
+      - run: cargo test --workspace --locked
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo build -p duby-broker --example socket_harness --locked
+      - run: node tests/runtime-smoke.mjs && node tests/runtime-file-flow.mjs && node tests/runtime-security.mjs
+      - name: Browser checks
+        run: npx playwright install --with-deps chromium && CHROMIUM_PATH="$(find "$HOME/.cache/ms-playwright" -path '*/chrome-linux*/chrome' -type f | head -1)" npm run test:e2e
+      - name: Package
+        run: npm run package
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: duby-linux-preview
+          path: .artifacts/packages/
+          retention-days: 7

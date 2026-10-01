@@ -1,0 +1,22 @@
+{
+  "packages": [
+    {
+      "file": "Duby-0.1.0-1.x86_64.rpm",
+      "bytes": 226916841,
+      "sha256": "c8a9f88f0a7ab91f9b8b486c02cb618c7bd73ec77d850d4bc2ce55d4f1b863d3",
+      "payloadFiles": 7,
+      "runtimeArchiveHashVerified": true
+    },
+    {
+      "file": "Duby_0.1.0_amd64.deb",
+      "bytes": 220425848,
+      "sha256": "06193612939b927fcd98a9240e45e53a3eb3c6d14788fab3491fb54e12a6d15e",
+      "payloadFiles": 7,
+      "runtimeArchiveHashVerified": true
+    }
+  ],
+  "baseline": "Debian 13.6 x86_64, glibc 2.41",
+  "cleanSystemInstall": "not performed",
+  "rpmDesktopInstall": "not performed",
+  "signed": false
+}

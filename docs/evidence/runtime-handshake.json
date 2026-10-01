@@ -1,0 +1,12 @@
+{
+  "ready": true,
+  "protocol": 4,
+  "provider": "ollama",
+  "model": "qwen3:8b",
+  "inferenceTested": false,
+  "summary": "Runtime connected. Model inference is checked when you send a task.",
+  "node": "v24.19.0",
+  "client": "2026.8.1",
+  "gateway": "2026.9.7",
+  "liveInference": "not run"
+}

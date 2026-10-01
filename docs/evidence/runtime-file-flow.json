@@ -1,0 +1,71 @@
+{
+  "passed": true,
+  "model": "deterministic streaming fixture; no live provider call",
+  "gateway": "2026.9.7",
+  "client": "2026.8.1",
+  "modelRequests": 3,
+  "argumentFragments": 19,
+  "interleavedToolCalls": true,
+  "credentialResidueFilesScanned": 18,
+  "toolsAdvertised": [
+    "duby_find",
+    "duby_read",
+    "duby_save"
+  ],
+  "output": "# Review summary\n\nShip the scoped-file alpha. Native Wayland validation remains open.\n",
+  "denials": [
+    "bad broker authentication",
+    "alternate exec tool",
+    "out-of-scope write"
+  ],
+  "events": [
+    {
+      "state": "understanding",
+      "summary": "Preparing the task workspace"
+    },
+    {
+      "state": "understanding",
+      "summary": "Preparing the selected context"
+    },
+    {
+      "state": "understanding",
+      "summary": "Waiting for the selected model"
+    },
+    {
+      "state": "working",
+      "summary": "duby_read · start"
+    },
+    {
+      "state": "working",
+      "summary": "duby_find · start"
+    },
+    {
+      "state": "working",
+      "summary": "duby_read · result"
+    },
+    {
+      "state": "working",
+      "summary": "duby_find · result"
+    },
+    {
+      "state": "working",
+      "summary": "duby_save · start"
+    },
+    {
+      "state": "working",
+      "summary": "duby_save · result"
+    },
+    {
+      "state": "working",
+      "summary": "Writing a response"
+    },
+    {
+      "state": "working",
+      "summary": "Writing a response"
+    },
+    {
+      "state": "completed",
+      "summary": "Response received"
+    }
+  ]
+}

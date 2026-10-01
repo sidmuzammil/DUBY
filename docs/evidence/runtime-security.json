@@ -1,0 +1,6 @@
+{
+  "passed": true,
+  "scenario": "Model requested the denied exec tool; OpenClaw rejected it and no target was created",
+  "model": "deterministic local fixture",
+  "modelRequests": 2
+}

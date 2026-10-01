@@ -1,0 +1,32 @@
+{
+  "name": "Duby",
+  "author": "Duby contributors",
+  "license": "CC-BY-4.0",
+  "generator": "scripts/create-duby.py",
+  "blender": "4.3.2",
+  "clips": [
+    "Available",
+    "Greeting",
+    "Listening",
+    "Understanding",
+    "Working",
+    "Needs approval",
+    "Needs information",
+    "Completed",
+    "Error",
+    "Offline",
+    "Paused",
+    "Sleeping"
+  ],
+  "bones": 10,
+  "provenance": "Original scripted geometry, rig, materials and keyframes; no upstream mascot assets.",
+  "files": {
+    "duby.blend": "32d3437ea292b5b4ddd633bb88e22618934a97f4f3ccb6cb716b23570d36b14c",
+    "atlas.png": "38164b1e6cf66017357f6d7f5156db135de5c598b32f2678ea09548d3d6ad5be",
+    "rear.png": "672cebc0a9c1180d11373313f88884380f8b8596fb7ba374d2726e263870c114",
+    "front.png": "6f6fd41e08b3a8d262d8221c78cecbcb0fb1d80c412c0e2234b34b6223b548bc",
+    "side.png": "cb5079af0e40bffc8e0d34d485e05a08ede29da98d59e7c37075917058c0c4be",
+    "duby.glb": "f22690e8b5320d52c135a45f7b82d2da530afe6c8828e8de89fb511dfabadb3b",
+    "three-quarter.png": "fa796614a58a38ded2edaa98287b8173f2acdfe1ea88e63491afaca99440210d"
+  }
+}

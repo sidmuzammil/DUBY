@@ -2,15 +2,15 @@
   "packages": [
     {
       "file": "Duby-0.1.0-1.x86_64.rpm",
-      "bytes": 226916841,
-      "sha256": "c8a9f88f0a7ab91f9b8b486c02cb618c7bd73ec77d850d4bc2ce55d4f1b863d3",
+      "bytes": 226701673,
+      "sha256": "8578b456253eae7d5893261f288b32951954923e21ca661715b6bf5a9a9a2e4a",
       "payloadFiles": 7,
       "runtimeArchiveHashVerified": true
     },
     {
       "file": "Duby_0.1.0_amd64.deb",
-      "bytes": 220425848,
-      "sha256": "06193612939b927fcd98a9240e45e53a3eb3c6d14788fab3491fb54e12a6d15e",
+      "bytes": 220222160,
+      "sha256": "4270b0b245ee1034c12e0b3de16a30c1315d26a64173c189588ed6394514a4aa",
       "payloadFiles": 7,
       "runtimeArchiveHashVerified": true
     }

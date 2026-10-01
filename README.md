@@ -105,12 +105,16 @@ Debian 13 require that ABI baseline; an RPM file alone does not establish Fedora
 compatibility. AppImage, ARM64 and signed updates are not yet released.
 
 CI is **manual only** (`workflow_dispatch`); this build did not trigger billed
-GitHub Actions. The environment could push Git, but blocked the GitHub release API,
-so no downloadable GitHub Release is claimed.
+GitHub Actions. GitHub rejected this environment's push: its `Protectol` identity
+lacks write access to `sidmuzammil/DUBY`. The source is committed locally; a portable
+Git bundle and generated installers are preserved in `.artifacts/packages/`.
+The GitHub release API was also blocked. No published repository update or
+downloadable GitHub Release is claimed until write access is restored.
 
 ## Read more
 
 - [Architecture and data ownership](docs/ARCHITECTURE.md)
+- [Build report and publishing status](docs/BUILD-REPORT.md)
 - [Security boundary and limitations](docs/SECURITY.md)
 - [Compatibility and remaining release gates](docs/STATUS.md)
 - [Development, packaging and recovery](docs/DEVELOPMENT.md)

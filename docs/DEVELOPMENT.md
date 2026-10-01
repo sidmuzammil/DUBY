@@ -23,7 +23,7 @@ handshakes, streaming assembly and broker operations. They do not evaluate model
 quality or claim that a live hosted/local model was tested.
 
 To regenerate the character use Blender **4.3.2** and `npm run assets`. The script
-creates geometry, a 12-bone rig, four skinned material meshes, twelve authored clips,
+creates geometry, a 10-bone rig, four skinned material meshes, twelve authored clips,
 four reference renders, and a 4×3 fallback atlas. `npm run assets:check` records the
 Khronos validation result. Four non-root skinned-mesh warnings are retained and
 explained by the exported armature hierarchy; there are no validation errors.
@@ -98,6 +98,12 @@ The GitHub workflow is manually dispatched. Building it may consume the reposito
 owner's Actions allowance. No workflow was triggered, and no billing setting changed.
 Do not put large installers into Git history. Upload them to a reviewed release only
 when the GitHub API is available; this cloud environment returned Forbidden.
+
+The attempted push to `sidmuzammil/DUBY` was denied to the configured `Protectol`
+identity. No alternate GitHub login is configured. Local commits and
+`.artifacts/packages/Duby-source.bundle` preserve the source. With repository write
+credentials restored, publish the existing checkout with `git push -u origin main`.
+The bundle can also be cloned with `git clone Duby-source.bundle Duby`.
 
 ## Recovery and uninstall
 

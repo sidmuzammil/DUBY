@@ -103,13 +103,11 @@ try:
   click('Settings')
   fill('Model ID','qwen3:8b')
   click('Connect runtime')
-  deadline=time.monotonic()+110
+  deadline=time.monotonic()+240
   connected=False
   while time.monotonic()<deadline:
    for n in nodes():
     if n.get_name()=='Runtime connected':connected=True;break
-    if n.get_role_name()=='status bar' or n.get_role_name()=='status':
-     print('Runtime status:',[Atspi.Text.get_text(c,0,-1) for c in walk(n) if 'Text' in c.get_interfaces()],flush=True)
    if connected:break
    time.sleep(.25)
   assert connected,'Packaged runtime did not connect; inspect native UI status'

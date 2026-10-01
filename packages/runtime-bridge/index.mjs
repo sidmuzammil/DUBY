@@ -219,7 +219,9 @@ export class Runtime {
         },
         onConnectError: () => {
           failedConnections++;
-          if (failedConnections >= 5) {
+          // Cold startup has its own 70-second deadline. A slow first launch
+          // must not exhaust reconnect attempts before the Gateway is listening.
+          if (!initialHello && failedConnections >= 5) {
             this.client?.stop();
             clearTimeout(timer);
             rej(

@@ -7,7 +7,7 @@ a completed flagship release**. The following distinctions are intentional.
 ## Implemented and exercised
 
 - Native Tauri 2 / GTK / WebKitGTK application, React interface, offline bundled assets.
-- Original Blender source and rigged GLB: 11,472 triangles, 12 bones, 4 material meshes,
+- Original Blender source and rigged GLB: 11,472 triangles, 10 bones, 4 material meshes,
   12 named clips, approximately 550 KB GLB. Four reference renders and a fallback
   atlas. Khronos validation: zero errors; four documented hierarchy warnings.
 - Real Three.js rendering inspected in Chromium **and the native X11 WebKitGTK app**.
@@ -27,7 +27,9 @@ a completed flagship release**. The following distinctions are intentional.
   themes. These do not replace a native screen-reader audit.
 - Native GTK/WebKit AT-SPI actions confirm folder consent, real note creation,
   memory storage/deletion and grant revocation against temporary fixture data.
-- Native build and Debian package generation with bundled Node/OpenClaw. Exact final
+- Native build and Debian/RPM package generation with bundled Node/OpenClaw. Both
+  payloads contain verified archive hashes, ELF executables and desktop entries.
+  The extracted runtime authenticates using its bundled Node executable. Exact final
   package and performance evidence is recorded alongside the generated artifacts.
 
 ## Compatibility evidence
@@ -59,7 +61,9 @@ a completed flagship release**. The following distinctions are intentional.
 No compatible model weights were available. The official Ollama binary was checksum
 verified, but `registry.ollama.ai` denied the model pull. No hosted inference was
 purchased or used. `api.github.com` was also denied, preventing release creation;
-Git remote operations are independently tested. These are environment limits, not
+Git remote reads work, but push returned HTTP 403: the connected `Protectol` identity
+does not have write access to `sidmuzammil/DUBY`. The source is locally committed and
+a portable Git bundle is provided. These are environment limits, not
 reasons to claim live provider or release-publishing success.
 
 ## Remaining specification work

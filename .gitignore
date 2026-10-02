@@ -1,0 +1,15 @@
+node_modules/
+dist/
+target/
+.artifacts/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+*.log
+*.blend1
+.DS_Store
+apps/desktop/src-tauri/gen/
+__pycache__/
+*.pyc

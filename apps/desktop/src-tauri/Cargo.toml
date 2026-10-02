@@ -1,0 +1,20 @@
+[package]
+name = "duby"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+duby-broker = { path = "../../../crates/duby-broker" }
+duby-platform = { path = "../../../crates/duby-platform" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
+sha2 = "0.10"
+tar = "0.4"
+zstd = "0.13"
+gtk = "0.18"
+gio = "0.18"

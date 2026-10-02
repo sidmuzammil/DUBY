@@ -1,0 +1,1 @@
+{"identifier":"main","description":"Duby UI: native broker commands only; no shell, filesystem or HTTP plugin","windows":["main","companion"],"permissions":["core:default"]}

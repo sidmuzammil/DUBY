@@ -1,0 +1,50 @@
+{
+  "auditDate": "2026-10-02",
+  "upstreams": [
+    {
+      "name": "coucou",
+      "url": "https://github.com/Louis-CFM/coucou",
+      "ref": "main at audit",
+      "commit": "f6f7c93cc4395940f02264c4c7d01f2422532e9e",
+      "codeLicense": "MIT",
+      "assetLicense": "Restricted; none reused",
+      "reuse": "Architecture and integration reference only; no copied source or assets",
+      "localPatches": [],
+      "lockfiles": {
+        "windows/package-lock.json": "6782248934b6e7957a78bc6b5e351d8eb891f55132ecb3b108615121249d896b",
+        "windows/Cargo.lock": "8b33aea631e8b14ad58e18ef94ab71bfeca3d39483e4c95d7d2081831912166c"
+      }
+    },
+    {
+      "name": "openclaw",
+      "url": "https://github.com/openclaw/openclaw",
+      "ref": "v2026.9.7",
+      "commit": "c074824a27c96d3983043f9eeb33823cd1772d8c",
+      "codeLicense": "MIT",
+      "assetLicense": "See third-party notices",
+      "reuse": "Normal pinned npm dependency and public SDK interfaces; unmodified",
+      "localPatches": [],
+      "lockfiles": {
+        "pnpm-lock.yaml": "47718ce261ef451da083f79f62943ac38a5252140c2fb213383c573e5078cdce"
+      }
+    }
+  ],
+  "testedRuntime": {
+    "node": "24.19.0",
+    "gateway": "2026.9.7",
+    "client": "2026.8.1",
+    "protocolPackage": "2026.8.1",
+    "wireProtocol": 4
+  },
+  "assetTools": {
+    "blender": "4.3.2",
+    "gltfValidator": "2.0.0-dev.3.10"
+  },
+  "dependencyAudit": {
+    "status": "Zero production advisories in the pinned installation",
+    "npm": "11.20.0-duby.1",
+    "patchProvenance": "vendor/npm-patch.json",
+    "patchDescription": "Dependency-only repack: brace-expansion 5.0.12, ip-address 10.7.2, undici 6.28.1. OpenClaw source unchanged.",
+    "validation": "Fresh npm ci, production audit, Gateway fixture and alternate-tool denial"
+  }
+}

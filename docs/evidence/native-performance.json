@@ -1,0 +1,34 @@
+{
+  "environment": "Debian 13.6 x86_64, Xvfb X11, software WebKitGTK rendering",
+  "binary": "/workspace/DUBY/.artifacts/installed/usr/bin/duby",
+  "freshAppData": true,
+  "timeToAccessibleOnboardingSeconds": 2.11,
+  "firstGatewayHandshakeSeconds": 8.54,
+  "settledSettingsShellAndBridge": {
+    "seconds": 10.01,
+    "cpuPercentOfOneCore": 0.9,
+    "proportionalMemoryMiB": {
+      "native": 74.3,
+      "webkit": 276.3,
+      "runtime": 68.6
+    },
+    "processCount": 4
+  },
+  "settledSettingsWithGateway": {
+    "seconds": 10.01,
+    "cpuPercentOfOneCore": 4.09,
+    "proportionalMemoryMiB": {
+      "native": 74.2,
+      "webkit": 277.3,
+      "runtime": 975.7
+    },
+    "processCount": 7
+  },
+  "modelRequests": 0,
+  "limits": [
+    "Single cloud sample, not a performance guarantee",
+    "Display server and compositor excluded",
+    "No GPU, battery, animation frame timing or local-model measurement",
+    "Automation overhead included in readiness timings"
+  ]
+}

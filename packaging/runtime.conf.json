@@ -1,0 +1,9 @@
+{
+  "bundle": {
+    "resources": {
+      "../../../.artifacts/runtime.tar.zst": "runtime.tar.zst",
+      "../../../.artifacts/runtime-manifest.json": "runtime-manifest.json",
+      "../../../integrations/gnome": "gnome"
+    }
+  }
+}

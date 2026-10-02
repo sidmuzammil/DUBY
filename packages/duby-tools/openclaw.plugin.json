@@ -1,0 +1,11 @@
+{
+  "id": "duby-tools",
+  "name": "Duby scoped files",
+  "description": "Three trusted broker tools. No shell, desktop control, or direct filesystem access.",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {}
+  },
+  "contracts": { "tools": ["duby_read", "duby_find", "duby_save"] }
+}

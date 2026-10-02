@@ -1,0 +1,23 @@
+{
+  "validator": "2.0.0-dev.3.10",
+  "errors": 0,
+  "warnings": 4,
+  "bytes": 549936,
+  "animations": [
+    "Available",
+    "Greeting",
+    "Listening",
+    "Understanding",
+    "Working",
+    "Needs approval",
+    "Needs information",
+    "Completed",
+    "Error",
+    "Offline",
+    "Paused",
+    "Sleeping"
+  ],
+  "skins": 1,
+  "meshes": 4,
+  "triangles": 11472
+}

@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "environment": "Debian 13.6, Xvfb, GTK/WebKitGTK, AT-SPI actions",
+  "binary": "/workspace/DUBY/.artifacts/appimage-installed/squashfs-root/AppRun",
+  "flows": [
+    "onboarding",
+    "native folder confirmation",
+    "create note through Rust broker",
+    "persist/editable memory UI and deletion",
+    "grant revocation"
+  ],
+  "fixtureContentVerified": true,
+  "noProviderCalls": true,
+  "bundledRuntimeHandshake": true,
+  "brokerDiagnosticExport": true
+}

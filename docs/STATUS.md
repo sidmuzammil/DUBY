@@ -42,6 +42,8 @@ a completed flagship release**. The following distinctions are intentional.
 | Environment / capability | Classification | Evidence / limit |
 | --- | --- | --- |
 | Debian 13.6 x86_64, GTK 3.24.49, WebKitGTK 2.54.0, Xvfb | Limited, tested development environment | Native window, GLB and UI smoke evidence; software graphics, not a normal desktop session |
+| Public alpha .deb | Built and published on a standard Ubuntu 24.04 runner | Frontend, Rust and local runtime fixtures passed; public download checksum verified; package retains glibc 2.41 minimum |
+| Ubuntu 26.04.1 x86_64 desktop | User target; installation not yet verified | Downloadable alpha available; actual installation and desktop behavior remain open checks |
 | Packaged GUI → managed Gateway | Tested in cloud X11 | Native authentication passes after removing PRoot from the test harness; cloud-only WebKit helper relocation leaves shipped libraries unchanged |
 | GNOME Wayland top-edge pet | Experimental implementation, not runtime-tested | Optional extension authenticates caller PID and registers the actual 3D window; real GNOME acceptance remains open |
 | KDE Plasma Wayland top-edge pet | Not implemented / not tested | Layer-shell creation and lifecycle proof missing |
@@ -70,8 +72,10 @@ verified, but `registry.ollama.ai` denied the model pull. No hosted inference wa
 purchased or used. GitHub API access was subsequently restored for `sidmuzammil`;
 the source and complete original Git history are now published at
 https://github.com/sidmuzammil/DUBY. A portable source bundle and local installers
-are also preserved. No GitHub Release, uploaded installer assets, or live model
-validation is claimed by this source publication.
+are also preserved. The x86_64 .deb and SHA256SUMS are now published in
+[v0.1.0-alpha.1](https://github.com/sidmuzammil/DUBY/releases/tag/v0.1.0-alpha.1).
+The anonymous public download was checksum-verified. This does not establish live
+model quality or a clean Ubuntu desktop installation.
 
 ## Remaining specification work
 

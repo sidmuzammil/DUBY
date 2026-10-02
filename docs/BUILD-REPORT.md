@@ -84,7 +84,17 @@ merge `96ab415ce1d82a128fa1cf93a1c0f2ced9361949` has the exact verified source t
 The branch was updated with fast-forward enforcement and checked again through the API.
 
 The portable `.artifacts/packages/Duby-source.bundle`, source ZIP and installers
-remain in the build workspace. No GitHub Release or installer assets were uploaded.
+remain in the build workspace. The x86_64 .deb and SHA256SUMS are also published in
+[v0.1.0-alpha.1](https://github.com/sidmuzammil/DUBY/releases/tag/v0.1.0-alpha.1).
+Direct cloud uploads returned `Bad Content-Length`, so a manual workflow on a free
+standard Ubuntu 24.04 runner rebuilt source commit
+`d632a141983a2370fe67795b3077e67218fa2fc5`, passed frontend/Rust/runtime fixture checks,
+uploaded the installer, downloaded it again, verified its checksum, and published
+the prerelease. [Run 36981931944](https://github.com/sidmuzammil/DUBY/actions/runs/36981931944)
+completed successfully. An independent anonymous download also passed SHA-256:
+`9128daeb56ba5512c8d8dba47b3db2dd9012b0e91993eba98a56d3433c84deb2`.
+The published installer is 223,549,888 bytes. Ubuntu 26.04 installation and desktop
+behavior remain unverified; this download is explicitly a development alpha.
 The Ollama model registry remains an unavailable check; no live local or hosted
 inference was run. The reusable cloud configuration is saved as a draft; fresh-task
 environment restoration has not been independently verified.

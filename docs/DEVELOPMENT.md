@@ -108,10 +108,13 @@ host WebKit to avoid mismatched helpers. ARM64 and signed updates remain unverif
 AppImage autostart records the portable `APPIMAGE` launcher, not its temporary mounted
 binary. Moving that launcher later requires toggling autostart off and on again.
 
-The GitHub workflow is manually dispatched. Building it may consume the repository
-owner's Actions allowance. No workflow was triggered, and no billing setting changed.
-Do not put large installers into Git history. Publish installers as release assets
-after reviewing the release gates; no GitHub Release was created during this build.
+GitHub workflows are manually dispatched. The release workflow only runs on this
+public repository's main branch and uses a free standard Ubuntu 24.04 runner, with
+no paid/larger runner or retained Actions artifacts. It was used to publish the
+development-alpha .deb and checksum in `v0.1.0-alpha.1`; no billing setting changed.
+Do not put large installers into Git history. The workflow verifies the draft
+release download before publishing, and refuses to overwrite an already-published
+release. Future versions need a new draft/tag and a corresponding workflow update.
 
 Source and all original development commits are published at `sidmuzammil/DUBY`.
 The authenticated GitHub API provided write access as `sidmuzammil` while this

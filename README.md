@@ -35,6 +35,23 @@ operations, and memory. AI reasoning needs a configured provider or an already
 installed local model. No model, paid account, API subscription, or cloud credit
 is bundled. Local routing is not an OS-level network isolation guarantee.
 
+## Download and install the alpha
+
+[Download the x86_64 .deb installer](https://github.com/sidmuzammil/DUBY/releases/download/v0.1.0-alpha.1/Duby_0.1.0_amd64.deb)
+and save it in your Downloads folder. Then run:
+
+```bash
+sudo apt install "$HOME/Downloads/Duby_0.1.0_amd64.deb"
+duby
+```
+
+The installer requires glibc 2.41 or newer and host WebKitGTK 4.1. APT installs its
+dependencies. Ubuntu 26.04 desktop installation is still unverified; do not force
+installation if APT reports unmet dependencies. The
+[release page](https://github.com/sidmuzammil/DUBY/releases/tag/v0.1.0-alpha.1)
+includes checksums and the precise alpha limitations. Node and OpenClaw are bundled;
+you do not need the development tools below just to install the package.
+
 ## Run from source
 
 The validated build machine is Debian 13.6 x86_64, Node 24.19.0, Rust 1.99.0,
@@ -112,7 +129,10 @@ CI is **manual only** (`workflow_dispatch`); this build did not trigger billed
 GitHub Actions. The source and complete development history are published at
 [sidmuzammil/DUBY](https://github.com/sidmuzammil/DUBY). A portable Git bundle and
 generated installers are preserved in `.artifacts/packages/` in the build workspace.
-No downloadable GitHub Release or installer assets have been published yet.
+The manual release workflow published the x86_64 .deb and its checksums as
+`v0.1.0-alpha.1`, using a free standard Ubuntu runner on this public repository.
+Its installer was downloaded again and checksum-verified before publication and
+then independently downloaded through the public link without authentication.
 
 ## Read more
 

@@ -39,12 +39,16 @@ try {
     socket: join(data, "unused.sock"),
     token: "fixture-only",
   });
+  assert.equal(await request("preferences", {}), null);
+  assert.deepEqual(await request("credential", { provider: "custom", value: "stdio-fixture-only-key" }), { provider: "custom", storage: "session" });
   const result = await request("connect", {
     provider: "ollama",
     model: "qwen3:8b",
   });
   assert.equal(result.ready, true);
   assert.equal(result.protocol, 4);
+  assert.equal((await request("preferences", {})).model, "qwen3:8b");
+  await request("forgetCredentials", {});
   await request("shutdown", {});
   await writeFile(
     "docs/evidence/runtime-stdio.json",

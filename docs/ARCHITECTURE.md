@@ -24,13 +24,14 @@ credentials. Remote content is rendered as text, not HTML. The broker knows only
 | Entity | Authority / storage |
 | --- | --- |
 | Conversations, agent turns, upstream run status | OpenClaw; supported `chat.send`, `chat.abort`, `chat.history` APIs |
-| Provider credentials | Linux Secret Service; background-only resolution; OpenClaw env SecretRefs |
+| Provider credentials | Linux Secret Service or native session-key dialog; background-only resolution; OpenClaw env SecretRefs |
 | Gateway bootstrap token | Fresh per owned runtime child; background memory only |
 | Provider selection / explicit model metadata | Validated background config in Duby's own runtime directory |
 | Grants and task admission | Rust broker; session-only capabilities, expiry and revocation checked per action |
 | Operation identity and result | SQLite execution journal; task + call ID + arguments, no implicit retries |
 | User-approved memories | Separate SQLite table; explicit add/edit/delete; only selected context enters a task |
-| Task text / pet state / step timeline | Rebuildable renderer projection, never an execution trigger |
+| Task index / run mapping | SQLite ID, run ID, short title, observed status and timestamps; never restores authority |
+| Conversation bodies / pet state / timeline | Rebuildable projection; saved bodies read from OpenClaw history, never execution triggers |
 | Theme and reduced-motion preferences | Local WebView storage; no credentials or authoritative conversations |
 | Integration connections / scheduled tasks | Not implemented or enabled in this alpha |
 
@@ -47,8 +48,10 @@ agent/chat sequence cursors are separate; tool result events do not complete tas
 
 Disconnect pauses new broker work. The reference client reconnects with bounded
 attempts; history is queried before presenting recovered state. Mutations are never
-automatically resent. Full recovery of a UI conversation after application restart
-is a remaining gate; session grants intentionally do not survive that restart.
+automatically resent. On restart, saved task metadata is available immediately and
+incomplete tasks become interrupted. After an explicit runtime connection, opening
+a saved task queries `chat.history` without resending a prompt. Session grants never
+survive restart. Validated provider/model preferences contain no credentials.
 The managed runtime is stopped on normal shutdown, then killed after a bounded grace
 period. Cold runtime startup failures surface explicitly, without a repair loop.
 

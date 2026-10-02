@@ -738,6 +738,8 @@ version = "0.1.0"
 dependencies = [
  "duby-broker",
  "duby-platform",
+ "gio",
+ "gtk",
  "serde",
  "serde_json",
  "sha2",

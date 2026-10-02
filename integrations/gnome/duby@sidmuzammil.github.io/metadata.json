@@ -1,0 +1,8 @@
+{
+  "uuid": "duby@sidmuzammil.github.io",
+  "name": "Duby companion anchor",
+  "description": "Experimental top-edge positioning for the registered Duby 3D companion. No arbitrary window-control interface.",
+  "shell-version": ["45", "46", "47", "48", "49", "50", "51"],
+  "version": 1,
+  "url": "https://github.com/sidmuzammil/DUBY"
+}

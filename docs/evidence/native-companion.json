@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "environment": "Xvfb X11 with xcompmgr, software rendering; no window manager",
+  "binary": "/workspace/DUBY/.artifacts/appimage-installed/squashfs-root/AppRun",
+  "companionGeometry": {
+    "X": 1046,
+    "Y": 8,
+    "WIDTH": 210,
+    "HEIGHT": 238
+  },
+  "separate3DWindow": true,
+  "renderedPetPixelsVerified": 6253,
+  "clickOpensMain": true,
+  "switchToFloating": true,
+  "hideClosesCompanion": true,
+  "autostartEnableDisable": true,
+  "portableAppImageAutostartPath": true,
+  "gracefulQuit": true,
+  "realDesktopMultiMonitorValidated": false,
+  "gnomeWaylandValidated": false
+}

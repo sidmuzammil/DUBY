@@ -16,13 +16,15 @@ See [the exact status and evidence](docs/STATUS.md), rather than interpreting th
 
 ## What you can do
 
-- Open a native Linux companion with a locally bundled 3D character and twelve clips.
-- Share a specific folder for one hour, read and find visible text files, and create
+- Open a native Linux app and separate floating 3D companion with twelve animation clips.
+- Share a specific folder for five minutes, one hour, or eight hours; read and find text files; create
   new files without overwriting existing ones. Revoke access at any time.
 - Run file-summary and drafting tasks through a managed OpenClaw runtime. The model
   uses three narrow tools; it cannot use an alternate shell or filesystem route.
 - Pause new file operations, stop a turn, see real operation outcomes, and keep
   user-approved memories on your device. Memories are shared only when you select them.
+- Reopen saved conversations without replaying their tasks; retain model settings
+  and opt into desktop autostart. Folder grants expire at app exit.
 - Use light/dark themes, reduced motion, an animation gallery, keyboard navigation,
   a still-render atlas fallback, and redacted diagnostic export.
 - Configure OpenAI, Anthropic, Gemini, native Ollama, or a custom OpenAI-compatible
@@ -67,7 +69,8 @@ X11 test-display invocation. It is development infrastructure, not a user instal
 
    From a development build use `target/debug/duby credentials openai`. The key is
    entered through `secret-tool` in the terminal, never in renderer state. A locked
-   or absent keychain is an explicit blocker; there is no plaintext fallback.
+   or absent keychain can also use **Use a key for this session**, a native masked
+   dialog. The key stays in background memory until you quit or forget session keys.
 3. Select the provider and model, then **Connect runtime**. This authenticates the
    managed Gateway. Inference is checked when you send a task, not by a hidden
    billable test. Hosted requests may incur charges on your own provider account.
@@ -102,7 +105,8 @@ OpenClaw dependency tree and an actual Node executable, preserving exports and
 licenses. The app and settings open without a code download, development toolchain,
 or Blender. Native host WebKitGTK dependencies still apply. Packages built on
 Debian 13 require that ABI baseline; an RPM file alone does not establish Fedora
-compatibility. AppImage, ARM64 and signed updates are not yet released.
+compatibility. The AppImage also requires host WebKitGTK 4.1; it does not remove
+this ABI baseline. ARM64 and signed updates remain open.
 
 CI is **manual only** (`workflow_dispatch`); this build did not trigger billed
 GitHub Actions. GitHub rejected this environment's push: its `Protectol` identity

@@ -1,5 +1,5 @@
 import { spawn, execFileSync } from "node:child_process";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, rename } from "node:fs/promises";
 import { createInterface } from "node:readline";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -17,6 +17,7 @@ export class Runtime {
     this.client = null;
     this.ready = false;
     this.secretValues = [];
+    this.sessionCredentials = new Map();
     this.stopping = false;
   }
   safeError(error) {
@@ -28,6 +29,39 @@ export class Runtime {
   async init(args) {
     this.settings = args;
     await mkdir(args.data, { recursive: true, mode: 0o700 });
+  }
+  credential({ provider, value }) {
+    if (
+      !["openai", "anthropic", "google", "custom"].includes(provider) ||
+      typeof value !== "string" ||
+      !value.trim() ||
+      value.length > 8192 ||
+      /[\r\n\0]/.test(value)
+    )
+      throw Error("Invalid session credential");
+    this.sessionCredentials.set(provider, value.trim());
+    this.secretValues.push(value.trim());
+    return { provider, storage: "session" };
+  }
+  async forgetCredentials() {
+    await this.shutdown();
+    this.sessionCredentials.clear();
+    this.secretValues = [];
+    return { ready: false };
+  }
+  async preferences() {
+    try {
+      const c = providerSchema.parse(
+        JSON.parse(
+          await readFile(this.settings.data + "/provider.json", "utf8"),
+        ),
+      );
+      // Apply endpoint validation too; preferences never include a key.
+      runtimeConfig(c, { data: this.settings.data, port: 0, plugin: "unused" });
+      return c;
+    } catch {
+      return null;
+    }
   }
   async connect(input) {
     if (this.active.size)
@@ -52,7 +86,8 @@ export class Runtime {
     );
     const { key, config } = runtimeConfig(c, { data, port, plugin });
     // A test harness can inject only into its own Runtime instance; there is no renderer switch.
-    let credential = this.testCredential;
+    let credential =
+      this.testCredential || this.sessionCredentials.get(c.provider);
     if (!credential && c.provider !== "ollama") {
       try {
         credential = execFileSync(
@@ -77,7 +112,12 @@ export class Runtime {
       mode: 0o600,
     });
     const gatewayToken = randomBytes(32).toString("hex");
-    this.secretValues = [credential, gatewayToken, token].filter(Boolean);
+    this.secretValues = [
+      ...this.sessionCredentials.values(),
+      credential,
+      gatewayToken,
+      token,
+    ].filter(Boolean);
     const env = {
       PATH: process.env.PATH,
       HOME: data,
@@ -238,6 +278,11 @@ export class Runtime {
       await this.shutdown();
       throw e;
     });
+    const preferencesPath = data + "/provider.json";
+    await writeFile(preferencesPath + ".tmp", JSON.stringify(c), {
+      mode: 0o600,
+    });
+    await rename(preferencesPath + ".tmp", preferencesPath);
     // Protocol authentication is distinct from a billable inference test.
     return {
       ready: true,
@@ -330,6 +375,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
               "send",
               "abort",
               "history",
+              "preferences",
+              "credential",
+              "forgetCredentials",
               "shutdown",
             ].includes(req.method)
           )

@@ -1,7 +1,7 @@
 {
   "passed": true,
   "environment": "Debian 13.6, Xvfb, GTK/WebKitGTK, AT-SPI actions",
-  "binary": "/workspace/DUBY/.artifacts/installed/usr/bin/duby",
+  "binary": "/workspace/DUBY/.artifacts/appimage-installed/squashfs-root/AppRun",
   "flows": [
     "onboarding",
     "native folder confirmation",

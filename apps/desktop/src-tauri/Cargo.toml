@@ -16,3 +16,5 @@ uuid = { version = "1", features = ["v4"] }
 sha2 = "0.10"
 tar = "0.4"
 zstd = "0.13"
+gtk = "0.18"
+gio = "0.18"

@@ -58,12 +58,12 @@ impl Broker {
         let version: u32 = db
             .query_row("PRAGMA user_version", [], |r| r.get(0))
             .map_err(err)?;
-        if version > 2 {
+        if version > 3 {
             return Err(
                 "This database was created by a newer Duby version; refusing to modify it".into(),
             );
         }
-        db.execute_batch("PRAGMA journal_mode=WAL; PRAGMA user_version=2; CREATE TABLE IF NOT EXISTS memories(id TEXT PRIMARY KEY,text TEXT NOT NULL,updated INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS operations(task TEXT,id TEXT,hash TEXT,status TEXT,result TEXT,at INTEGER,PRIMARY KEY(task,id)); UPDATE operations SET status='unknown' WHERE status='running';").map_err(err)?;
+        db.execute_batch("PRAGMA journal_mode=WAL; BEGIN IMMEDIATE; CREATE TABLE IF NOT EXISTS memories(id TEXT PRIMARY KEY,text TEXT NOT NULL,updated INTEGER NOT NULL); CREATE TABLE IF NOT EXISTS operations(task TEXT,id TEXT,hash TEXT,status TEXT,result TEXT,at INTEGER,PRIMARY KEY(task,id)); CREATE TABLE IF NOT EXISTS task_index(id TEXT PRIMARY KEY,run_id TEXT,title TEXT NOT NULL,state TEXT NOT NULL,created INTEGER NOT NULL,updated INTEGER NOT NULL); UPDATE operations SET status='unknown' WHERE status='running'; UPDATE task_index SET state='interrupted' WHERE state NOT IN ('completed','cancelled','error','interrupted'); PRAGMA user_version=3; COMMIT;").map_err(err)?;
         Ok(Self {
             grants: HashMap::new(),
             tasks: HashMap::new(),
@@ -105,6 +105,63 @@ impl Broker {
             .map(|g| g.info.clone())
             .collect()
     }
+    /// A display index and runtime mapping, never a second conversation store.
+    pub fn record_task(&self, id: &str, prompt: &str) -> Result<(), String> {
+        if !self.tasks.contains_key(id) {
+            return Err("Cannot index an unbound task".into());
+        }
+        let title: String = prompt.chars().take(160).collect();
+        self.db
+            .execute(
+                "INSERT INTO task_index VALUES(?,NULL,?,'working',?,?)",
+                params![id, title, now(), now()],
+            )
+            .map_err(err)?;
+        Ok(())
+    }
+    pub fn bind_run(&self, id: &str, run: &str) -> Result<(), String> {
+        self.db
+            .execute(
+                "UPDATE task_index SET run_id=?,updated=? WHERE id=?",
+                params![run, now(), id],
+            )
+            .map_err(err)?;
+        Ok(())
+    }
+    pub fn observe_task(&self, id: &str, state: &str) -> Result<(), String> {
+        if ![
+            "working",
+            "understanding",
+            "paused",
+            "completed",
+            "cancelled",
+            "error",
+        ]
+        .contains(&state)
+        {
+            return Ok(());
+        }
+        self.db.execute("UPDATE task_index SET state=?,updated=? WHERE id=? AND state NOT IN ('completed','cancelled','error','interrupted') AND (state != 'paused' OR ? IN ('completed','cancelled','error','paused'))", params![state,now(),id,state]).map_err(err)?;
+        Ok(())
+    }
+    pub fn known_task(&self, id: &str) -> Result<bool, String> {
+        self.db
+            .query_row(
+                "SELECT EXISTS(SELECT 1 FROM task_index WHERE id=?)",
+                [id],
+                |r| r.get(0),
+            )
+            .map_err(err)
+    }
+    pub fn task_index(&self) -> Result<Vec<Value>, String> {
+        let mut q = self.db.prepare("SELECT id,run_id,title,state,created FROM task_index ORDER BY created DESC,rowid DESC LIMIT 200").map_err(err)?;
+        let rows = q.query_map([], |r| {
+            let id: String = r.get(0)?;
+            let recovered = !self.tasks.contains_key(&id);
+            Ok(json!({"id":id,"runId":r.get::<_,Option<String>>(1)?,"prompt":r.get::<_,String>(2)?,"state":r.get::<_,String>(3)?,"at":r.get::<_,u64>(4)? * 1000,"text":"","steps":[],"recovered":recovered}))
+        }).map_err(err)?;
+        rows.collect::<Result<Vec<_>, _>>().map_err(err)
+    }
     pub fn revoke(&mut self, id: &str) {
         self.grants.remove(id);
     }
@@ -132,7 +189,18 @@ impl Broker {
         if ["cancelled", "completed"].contains(&task.state.as_str()) {
             return Err("Task is already terminal".into());
         }
+        if state == "active" && !task.grant.is_empty() {
+            let grant = self
+                .grants
+                .get(&task.grant)
+                .ok_or("Folder permission was revoked; start a new task after choosing access")?;
+            if grant.info.expires <= now() {
+                return Err("Folder permission expired; choose access for a new task".into());
+            }
+        }
         task.state = state.into();
+        // Explicit resume is different from a late runtime event.
+        self.db.execute("UPDATE task_index SET state=?,updated=? WHERE id=? AND state NOT IN ('completed','cancelled','error','interrupted')", params![if state == "active" { "working" } else { state },now(),id]).map_err(err)?;
         Ok(())
     }
     pub fn pause_all(&mut self) {
@@ -141,6 +209,7 @@ impl Broker {
                 task.state = "paused".into();
             }
         }
+        let _ = self.db.execute("UPDATE task_index SET state='paused',updated=? WHERE state IN ('working','understanding')", [now()]);
     }
     pub fn execute(&mut self, req: Request) -> Result<Value, String> {
         if req.id.is_empty() || req.id.len() > 200 || req.content.len() > MAX_BYTES {
@@ -526,6 +595,37 @@ mod tests {
         drop(b);
         let mut b = Broker::new(&t.path().join("journal.sqlite")).unwrap();
         assert!(b.execute(req("1", "duby_save", "a")).is_err());
+    }
+    #[test]
+    fn task_recovery_preserves_mapping_without_authority_or_replay() {
+        let (t, mut b, _) = setup(true);
+        let id = req("1", "duby_read", "a").task;
+        b.record_task(&id, "Read my file").unwrap();
+        b.bind_run(&id, "upstream-run").unwrap();
+        b.observe_task(&id, "working").unwrap();
+        b.control(&id, "paused").unwrap();
+        b.observe_task(&id, "working").unwrap();
+        assert_eq!(b.task_index().unwrap()[0]["state"], "paused");
+        drop(b);
+        let mut b = Broker::new(&t.path().join("journal.sqlite")).unwrap();
+        let index = b.task_index().unwrap();
+        assert_eq!(index[0]["state"], "interrupted");
+        assert_eq!(index[0]["runId"], "upstream-run");
+        assert_eq!(index[0]["recovered"], true);
+        assert!(b.grants().is_empty());
+        assert!(b.control(&id, "active").is_err());
+        assert!(b.known_task(&id).unwrap());
+        assert!(!b.known_task("arbitrary-session").unwrap());
+    }
+    #[test]
+    fn completed_task_cannot_be_reopened_by_late_observation() {
+        let (_t, mut b, _) = setup(true);
+        let id = req("1", "duby_read", "a").task;
+        b.record_task(&id, "A task").unwrap();
+        b.observe_task(&id, "completed").unwrap();
+        b.control(&id, "completed").unwrap();
+        b.observe_task(&id, "working").unwrap();
+        assert_eq!(b.task_index().unwrap()[0]["state"], "completed");
     }
     #[test]
     fn refuses_future_schema_without_mutating_it() {

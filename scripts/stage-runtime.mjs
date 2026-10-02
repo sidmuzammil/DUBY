@@ -18,6 +18,7 @@ const dependencies = Object.fromEntries(
 // Use the root lockfile to preserve the exact resolution; npm prunes the unused packages.
 await cp("package-lock.json", root + "/package-lock.json");
 await cp("package.json", root + "/package.json");
+await cp("vendor", root + "/vendor", { recursive: true });
 let r = spawnSync("npm", ["ci", "--omit=dev", "--no-audit", "--no-fund"], {
   cwd: root,
   stdio: "inherit",

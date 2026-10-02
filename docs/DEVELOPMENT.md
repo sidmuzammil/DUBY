@@ -5,7 +5,8 @@
 Node is pinned in `.nvmrc`, Rust in `rust-toolchain.toml`, npm dependency resolutions
 in `package-lock.json`, and Rust resolutions in `Cargo.lock`. Use `npm ci` and locked
 Cargo commands. The reviewed upstream SHAs, releases, source licenses and lockfile
-hashes are in `upstream-manifest.json`. No upstream patches are applied.
+hashes are in `upstream-manifest.json`. OpenClaw is unmodified; a reproducible
+npm dependency repack is documented in `vendor/README.md`.
 
 Run from the repository root:
 
@@ -43,40 +44,41 @@ source /workspace/toolchains/activate.sh
 npm run dev
 ```
 
-Native smoke testing in this machine uses Xvfb with software graphics. The distro
-WebKitGTK library has an absolute helper path, so a development-only PRoot mapping
-locates the extracted helpers without modifying the host:
+Native smoke testing uses Xvfb with software graphics. Debian WebKitGTK hardcodes
+its helper location under `/usr/lib`, while cloud helpers live in the sysroot.
+`scripts/relocate-webkit-test.py` changes only that path constant in a private test
+copy of the library. The original library and production artifacts remain unchanged.
+No sandbox-disable flag is used. PRoot is no longer used: its filesystem EFAULT
+errors prevented reliable Gateway startup.
 
 ```bash
 source /workspace/toolchains/activate.sh
+python3 scripts/relocate-webkit-test.py
+# Start once in a separate terminal:
 Xvfb :99 -screen 0 1280x900x24 -nolisten tcp
-# In another terminal, with the Vite development server running:
-DISPLAY=:99 \
+# For transparent companion checks, in another terminal:
+DISPLAY=:99 xcompmgr -n
+# With an extracted Debian package (debug mode also needs the Vite server):
+DISPLAY=:99 GSETTINGS_BACKEND=memory \
+DUBY_TEST_BINARY="$PWD/.artifacts/installed/usr/bin/duby" \
+DUBY_TEST_RUNTIME=1 DUBY_TEST_EXPORT=1 \
+LD_LIBRARY_PATH="/workspace/toolchains/webkit-relocated:$LD_LIBRARY_PATH" \
+GI_TYPELIB_PATH=/workspace/toolchains/sysroot/usr/lib/x86_64-linux-gnu/girepository-1.0 \
 WEBKIT_INJECTED_BUNDLE_PATH=/workspace/toolchains/sysroot/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1/injected-bundle \
 WEBKIT_DISABLE_DMABUF_RENDERER=1 \
-proot -b /workspace/toolchains/sysroot/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1:/usr/lib/x86_64-linux-gnu/webkit2gtk-4.1 \
-dbus-run-session target/debug/duby
+dbus-run-session /usr/bin/python3 tests/native-smoke.py
 ```
 
-For the native automated UI flow, also set
-`GI_TYPELIB_PATH=/workspace/toolchains/sysroot/usr/lib/x86_64-linux-gnu/girepository-1.0`
-and `GSETTINGS_BACKEND=memory`, then replace the final executable with
-`/usr/bin/python3 tests/native-smoke.py`. It uses AT-SPI to locate controls, native
-confirmation, real clipboard input and actual broker writes in temporary fixtures.
-`DUBY_TEST_BINARY` selects an extracted package executable; `DUBY_TEST_RUNTIME=1`
-checks the bundled Gateway handshake without inference, and `DUBY_TEST_EXPORT=1`
-checks the broker-backed diagnostic export. Bind the extracted `/usr/lib/Duby`
-resource directory into the same PRoot session when testing a Debian package.
-
-Use separate XDG data/config/cache locations for fixture runs. These processes must
-be restarted after restoring a cloud snapshot. Do not treat PRoot or Xvfb as an
-application sandbox or as a real GNOME/KDE compatibility test. This old PRoot build
-causes filesystem-metadata errors in GTK's folder picker; the native-confirmed path
-entry is provided as a fallback. No WebKit sandbox-disable flags were used.
-The packaged GUI's managed Gateway connection also times out under this PRoot
-wrapper. Direct bundled-runtime and stdio lifecycle tests pass on the host; the
-complete GUI-to-Gateway path still needs validation on a normal Linux desktop.
-PRoot emits filesystem `EFAULT` errors and is not a supported end-user deployment.
+Replace `native-smoke.py` with `native-ai-flow.py` for a deterministic local model
+fixture exercising the native credential dialog, Gateway/plugin/broker file flow,
+restart recovery and credential residue. It makes no hosted requests. The shared
+driver uses actual GTK/WebKit AT-SPI controls, clipboard input, native confirmation
+and private fixture data. It restores X11 keyboard focus because Xvfb has no window
+manager. These checks do not establish real GNOME/KDE or hardware compatibility.
+`native-companion.py` checks actual GLB pixels, placement, mode changes, autostart and
+quit. `native-performance.py` records process-tree PSS, idle CPU and readiness times
+without sending a model request; run it when other builds are idle. For an AppImage,
+extract with `--appimage-extract` and set `DUBY_TEST_BINARY` to its `AppRun`.
 
 ## Packaging
 
@@ -84,7 +86,7 @@ PRoot emits filesystem `EFAULT` errors and is not a supported end-user deploymen
 installation plus the exact running Node executable, builds the native shell and
 bundles `.deb` / `.rpm`. Artifacts and checksums go in `.artifacts/packages/`.
 Staging preserves package exports, package metadata, native modules and notices.
-The complete tree is bundled as `runtime.tar.zst`. On the first AI connection,
+The complete tree is bundled as `runtime.tar.zst`. When the background bridge first starts,
 Rust verifies its SHA-256 and extracts it into a private content-addressed `engines/`
 directory. Later starts reuse a completed extraction. This is local extraction,
 not a code download. The archive is configured in `packaging/runtime.conf.json`,
@@ -94,9 +96,17 @@ Blender or an existing OpenClaw installation to open the installed shell.
 
 Only build with the intended runtime/ABI baseline. The current artifacts were built
 on Debian 13 with glibc 2.41; they are not binaries for older Ubuntu/Debian systems.
+The Debian dependency and RPM symbol requirement enforce that glibc baseline.
 The manual CI recipe uses Ubuntu 24.04 as a future separate baseline, but it was not
-run during this build. The RPM needs its own clean-install validation. AppImage and
-ARM64 packaging are outstanding. There is no signed update feed in this alpha.
+run during this build. The RPM needs its own clean-install validation.
+`bash scripts/package-appimage.sh` builds an AppImage with the same ABI baseline
+and explicit host WebKitGTK 4.1 prerequisite. In this cloud sysroot, use
+`XDG_CACHE_HOME=/workspace/.cache` and
+`LD_GTK_LIBRARY_PATH=/workspace/toolchains/sysroot/usr/lib/x86_64-linux-gnu`; GTK
+runtime modules must exist there. The finalizer preserves sysroot notices and uses
+host WebKit to avoid mismatched helpers. ARM64 and signed updates remain unverified.
+AppImage autostart records the portable `APPIMAGE` launcher, not its temporary mounted
+binary. Moving that launcher later requires toggling autostart off and on again.
 
 The GitHub workflow is manually dispatched. Building it may consume the repository
 owner's Actions allowance. No workflow was triggered, and no billing setting changed.
@@ -117,11 +127,12 @@ modify another OpenClaw installation. Grants are session-only. Stop an uncertain
 task and inspect its operation receipt/output before retrying; the app never claims
 that cancellation undid a completed save.
 
-A missing/locked Secret Service prevents hosted connection; unlock the keychain or
-use a local model. This release does not implement a session-only credential prompt.
+A missing/locked Secret Service can use the native **Use a key for this session**
+dialog. **Forget session keys** disconnects the runtime and discards those keys.
 No keys are accepted through the chat composer or ordinary settings.
 
 Use the package manager to remove the package (`apt remove duby` on Debian).
-Personal XDG data and keychain credentials are retained; remove them deliberately if
+Disable Autostart in Settings and remove the optional GNOME extension before
+uninstalling. Personal XDG data and keychain credentials are retained; remove them if
 desired. Keep unrelated `~/.openclaw` data. Future updates must migrate schema versions
 explicitly; this app refuses to modify a database from a newer schema.

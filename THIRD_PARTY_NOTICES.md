@@ -23,3 +23,10 @@ Duby first-party source is MIT. Its original artwork is separately CC BY 4.0.
 The generated `docs/dependency-licenses.json` inventories npm package license
 metadata. It is an audit aid, not a replacement for each dependency's license text.
 Do not remove legal notices when rebranding or updating dependencies.
+
+## npm dependency security repack
+
+The runtime uses npm 11.20.0-duby.1, a marked dependency-only repack of npm
+11.20.0 replacing three bundled packages with patched upstream releases. See
+`vendor/README.md` and `vendor/npm-patch.json`. Original/replacement license files
+are preserved inside the archive; OpenClaw executable source remains unchanged.

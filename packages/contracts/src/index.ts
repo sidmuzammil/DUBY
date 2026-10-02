@@ -39,6 +39,7 @@ export interface Task {
   text: string;
   steps: string[];
   at: number;
+  recovered?: boolean;
 }
 // Late observations must not reopen a stopped/completed task or undo a user pause.
 export function observedTaskState(previous: string, incoming: string): string {

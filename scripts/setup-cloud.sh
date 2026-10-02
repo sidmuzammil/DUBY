@@ -23,17 +23,24 @@ export APT_CONFIG="$apt_state/config"
 /usr/bin/apt-get update
 /usr/bin/apt-get install --download-only -y --no-install-recommends libwebkit2gtk-4.1-dev \
   libappindicator3-dev librsvg2-dev patchelf libssl-dev xvfb dbus-x11 proot xdotool \
-  gir1.2-atspi-2.0 libtalloc2 zstd
+  gir1.2-atspi-2.0 libtalloc2 zstd xcompmgr
 mkdir -p "$base/sysroot"
 for deb in "$apt_state"/archives/*.deb; do dpkg-deb -x "$deb" "$base/sysroot"; done
 python3 - <<'PY'
 import pathlib,os
+import shutil
 root=pathlib.Path('/workspace/toolchains/sysroot')
 for p in root.rglob('*'):
  if p.is_symlink() and not p.exists():
   target=pathlib.Path(os.readlink(p))
   source=target if target.is_absolute() else pathlib.Path('/')/p.parent.relative_to(root)/target
   if source.exists():p.unlink();p.symlink_to(source)
+# Already-installed runtime packages are not downloaded by apt. Mirror their
+# matching GTK modules so linuxdeploy can resolve its sysroot paths too.
+for name in ['gtk-3.0', 'gdk-pixbuf-2.0', 'gio/modules']:
+ source=pathlib.Path('/usr/lib/x86_64-linux-gnu')/name
+ if source.is_dir():
+  shutil.copytree(source,root/'usr/lib/x86_64-linux-gnu'/name,dirs_exist_ok=True)
 PY
 export CARGO_HOME="$base/cargo" RUSTUP_HOME="$base/rustup"
 if [ ! -x "$CARGO_HOME/bin/rustup" ]; then
@@ -52,6 +59,7 @@ export NPM_CONFIG_CACHE=/workspace/.cache/npm
 export CARGO_BUILD_JOBS=4
 ACTIVATE
 source "$base/activate.sh"
+python3 scripts/relocate-webkit-test.py
 rustup toolchain install 1.99.0 --profile minimal --component rustfmt,clippy
 node -e 'const [major,minor]=process.versions.node.split(".").map(Number);if(major!==24||minor<16)throw Error("Use Node 24.19.0 from .nvmrc")'
 npm ci

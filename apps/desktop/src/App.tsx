@@ -98,6 +98,7 @@ export default function App() {
     [current, setCurrent] = useState(""),
     [prompt, setPrompt] = useState(""),
     [connected, setConnected] = useState(false),
+    [connectionError, setConnectionError] = useState(""),
     [busy, setBusy] = useState(false),
     [toast, setToast] = useState(""),
     [files, setFiles] = useState<string[] | null>(null),
@@ -119,12 +120,16 @@ export default function App() {
     [pathOpen, setPathOpen] = useState(false),
     [folderPath, setFolderPath] = useState(""),
     [folderWrite, setFolderWrite] = useState(false),
+    [grantSeconds, setGrantSeconds] = useState(3600),
+    [autostart, setAutostart] = useState(false),
+    [companionMode, setCompanionMode] = useState("hidden"),
     [memories, setMemories] = useState<
       { id: string; text: string; updated: number }[]
     >([]),
     [memoryText, setMemoryText] = useState(""),
     [memoryId, setMemoryId] = useState<string | null>(null);
   const composer = useRef<HTMLTextAreaElement>(null),
+    providerEdited = useRef(false),
     eventBacklog = useRef<any[]>([]);
   const active = tasks.find((t) => t.id === current),
     grant = grants.find((g) => g.id === selected),
@@ -160,6 +165,27 @@ export default function App() {
       setJournal(s.journal);
       setMemories(s.memories || []);
       setCaps(s.capabilities);
+      setAutostart(s.autostart || false);
+      setTasks((old) => {
+        const existing = new Map(old.map((task) => [task.id, task]));
+        const loaded = (s.tasks || []).map(
+          (task: Task) =>
+            existing.get(task.id) || {
+              ...task,
+              steps: task.recovered
+                ? [
+                    task.state === "interrupted"
+                      ? "Duby closed before this task was reconciled. Access has expired; no work was replayed."
+                      : "Saved task. Reconnect your runtime to load its conversation.",
+                  ]
+                : [],
+            },
+        );
+        return [
+          ...loaded,
+          ...old.filter((task) => !loaded.some((t: Task) => t.id === task.id)),
+        ];
+      });
     } catch (e) {
       setToast(String(e));
     }
@@ -167,14 +193,26 @@ export default function App() {
   useEffect(() => {
     void refresh();
     if (!native) return;
+    void command("ai_preferences")
+      .then((saved) => {
+        if (saved && !providerEdited.current) {
+          setProvider(saved.provider);
+          setModel(saved.model);
+          setEndpoint(saved.endpoint || "");
+        }
+      })
+      .catch((e) => {
+        setConnectionError(String(e));
+        setToast(String(e));
+      });
     let unlisten: (() => void) | undefined;
     let gone = false;
     listen("duby-event", (e) => {
       const parsed = taskEvent.safeParse(e.payload);
       if (!parsed.success) return;
       const v = parsed.data;
-      if (v.state === "offline") {
-        setConnected(false);
+      if (v.state === "offline" || (v.state === "paused" && !v.taskId)) {
+        if (v.state === "offline") setConnected(false);
         setToast(v.summary);
         setTasks((old) =>
           old.map((t) =>
@@ -189,7 +227,7 @@ export default function App() {
         );
         return;
       }
-      eventBacklog.current.push(v);
+      eventBacklog.current = [...eventBacklog.current.slice(-99), v];
       setTasks((old) =>
         old.map((t) =>
           t.id === v.taskId
@@ -266,10 +304,15 @@ export default function App() {
   }, [onboarding !== null, files !== null, saveOpen, pathOpen]);
   async function choose(write: boolean) {
     try {
-      const g = await command<Grant>("choose_folder", { write });
+      const g = await command<Grant>("choose_folder", {
+        write,
+        seconds: grantSeconds,
+      });
       setGrants((old) => [...old, g]);
       setSelected(g.id);
-      setToast(`Access granted to ${short(g.folder)} for one hour.`);
+      setToast(
+        `Access granted to ${short(g.folder)} until ${new Date(g.expires * 1000).toLocaleTimeString()}.`,
+      );
     } catch (e) {
       setToast(String(e));
     }
@@ -295,6 +338,7 @@ export default function App() {
   }
   async function connect() {
     setBusy(true);
+    setConnectionError("");
     try {
       const r = await command("ai_connect", {
         config: { provider, model, ...(endpoint ? { endpoint } : {}) },
@@ -303,6 +347,7 @@ export default function App() {
       setToast(r.summary);
     } catch (e) {
       setConnected(false);
+      setConnectionError(String(e));
       setToast(String(e));
     } finally {
       setBusy(false);
@@ -335,18 +380,64 @@ export default function App() {
       )) {
         task = {
           ...task,
-          state: e.state,
+          state: observedTaskState(task.state, e.state),
           text: e.text ?? task.text,
           steps: [...task.steps, e.summary],
         };
       }
-      setTasks((old) => [task, ...old]);
+      setTasks((old) => [task, ...old.filter((t) => t.id !== task.id)]);
       setCurrent(r.taskId);
       setPrompt("");
     } catch (e) {
       setToast(String(e));
     } finally {
       setBusy(false);
+    }
+  }
+  async function openConversation(task: Task) {
+    setCurrent(task.id);
+    setPage("home");
+    if (!task.recovered) return;
+    if (!connected) {
+      setToast(
+        "Reconnect the same AI runtime in Settings to load this saved conversation. Nothing will be resent.",
+      );
+      return;
+    }
+    try {
+      const history = await command("ai_history", { task: task.id });
+      const messages = history.messages || [];
+      const publicText = (message: any) =>
+        typeof message?.content === "string"
+          ? message.content
+          : (message?.content || [])
+              .filter((c: any) => c.type === "text")
+              .map((c: any) => c.text)
+              .join("\n");
+      const response = [...messages]
+        .reverse()
+        .find((m: any) => m.role === "assistant" && publicText(m));
+      const user = messages.find((m: any) => m.role === "user");
+      setTasks((old) =>
+        old.map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                prompt: publicText(user) || t.prompt,
+                text: publicText(response),
+                recovered: false,
+                steps: [
+                  ...t.steps,
+                  history.inFlightRun
+                    ? "The runtime reports a pending turn. File access remains closed."
+                    : "Conversation loaded from OpenClaw. No task was replayed.",
+                ],
+              }
+            : t,
+        ),
+      );
+    } catch (e) {
+      setToast(String(e));
     }
   }
   async function control(action: string) {
@@ -560,6 +651,15 @@ export default function App() {
                         </div>
                       </div>
                       <div className="task-controls">
+                        {active.recovered && (
+                          <button
+                            className="small-button"
+                            disabled={!connected}
+                            onClick={() => void openConversation(active)}
+                          >
+                            Load saved conversation
+                          </button>
+                        )}
                         {running && (
                           <>
                             <button
@@ -795,6 +895,17 @@ export default function App() {
                   Allow reading & new files
                 </button>
               </div>
+              <label className="grant-duration">
+                Folder access duration
+                <select
+                  value={grantSeconds}
+                  onChange={(e) => setGrantSeconds(Number(e.target.value))}
+                >
+                  <option value={300}>Five minutes</option>
+                  <option value={3600}>One hour</option>
+                  <option value={28800}>Eight hours</option>
+                </select>
+              </label>
               <button
                 className="text-button"
                 style={{ marginTop: 14 }}
@@ -805,9 +916,9 @@ export default function App() {
               <div className="info-strip">
                 <ShieldCheck size={18} />
                 <p>
-                  Folder access lasts one hour and ends when Duby closes.
-                  Existing files are never overwritten. Hidden files and paths
-                  outside the folder are blocked.
+                  Folder access expires after your chosen duration or when Duby
+                  closes. Existing files are never overwritten. Hidden files and
+                  paths outside the folder are blocked.
                 </p>
               </div>
               <h2 className="subheading">
@@ -1032,8 +1143,8 @@ export default function App() {
                 <span>peace of mind.</span>
               </h1>
               <p className="page-intro">
-                Your current-session conversations and local operation journal.
-                A response is complete only when the runtime says so.
+                Your saved conversations and local operation journal. A response
+                is complete only when the runtime says so.
               </p>
               {tasks.length === 0 ? (
                 <div className="empty-state">
@@ -1056,10 +1167,7 @@ export default function App() {
                       <small>{new Date(t.at).toLocaleTimeString()}</small>
                       <button
                         className="text-button"
-                        onClick={() => {
-                          setCurrent(t.id);
-                          setPage("home");
-                        }}
+                        onClick={() => void openConversation(t)}
                       >
                         Open conversation <ArrowUpRight size={14} />
                       </button>
@@ -1199,15 +1307,12 @@ export default function App() {
                     OpenClaw runs locally. Your chosen model processes the
                     prompts and file content you share.
                   </p>
-                  <label>
-                    Provider
-                    <select
-                      value={provider}
-                      onChange={(e) => {
-                        setProvider(e.target.value);
-                        setEndpoint("");
-                        setConnected(false);
-                      }}
+                  <div className="choice-setting">
+                    <div id="provider-label">Provider</div>
+                    <div
+                      className="provider-options"
+                      role="group"
+                      aria-labelledby="provider-label"
                     >
                       {[
                         ["ollama", "Ollama · local model"],
@@ -1216,12 +1321,21 @@ export default function App() {
                         ["google", "Google Gemini"],
                         ["custom", "Custom · OpenAI-compatible"],
                       ].map(([v, n]) => (
-                        <option value={v} key={v}>
+                        <button
+                          key={v}
+                          aria-pressed={provider === v}
+                          onClick={() => {
+                            providerEdited.current = true;
+                            setProvider(v);
+                            setEndpoint("");
+                            setConnected(false);
+                          }}
+                        >
                           {n}
-                        </option>
+                        </button>
                       ))}
-                    </select>
-                  </label>
+                    </div>
+                  </div>
                   <label>
                     Model ID
                     <input
@@ -1232,6 +1346,7 @@ export default function App() {
                       }
                       value={model}
                       onChange={(e) => {
+                        providerEdited.current = true;
                         setModel(e.target.value);
                         setConnected(false);
                       }}
@@ -1241,12 +1356,45 @@ export default function App() {
                     <div className="credential-note">
                       <ShieldCheck size={16} />
                       <div>
-                        Set your key securely from a terminal:
+                        Save your key in the system keychain from a terminal:
                         <code>duby credentials {provider}</code>
                         <small>
                           Stored in Linux Secret Service. Keys never enter this
                           interface.
                         </small>
+                        <button
+                          className="small-button"
+                          disabled={!native}
+                          onClick={async () => {
+                            try {
+                              await command("session_credential", { provider });
+                              setToast(
+                                "Session key ready. Connect the runtime when you are ready.",
+                              );
+                            } catch (error) {
+                              setToast(String(error));
+                            }
+                          }}
+                        >
+                          Use a key for this session
+                        </button>
+                        <button
+                          className="text-button"
+                          disabled={!native}
+                          onClick={async () => {
+                            try {
+                              await command("forget_session_credentials");
+                              setConnected(false);
+                              setToast(
+                                "Runtime disconnected and session keys forgotten.",
+                              );
+                            } catch (error) {
+                              setToast(String(error));
+                            }
+                          }}
+                        >
+                          Forget session keys
+                        </button>
                       </div>
                     </div>
                   )}
@@ -1267,6 +1415,7 @@ export default function App() {
                         }
                         value={endpoint}
                         onChange={(e) => {
+                          providerEdited.current = true;
                           setEndpoint(e.target.value);
                           setConnected(false);
                         }}
@@ -1296,6 +1445,11 @@ export default function App() {
                     uses your model and may incur provider charges. Duby never
                     switches providers automatically.
                   </p>
+                  {connectionError && (
+                    <p className="connection-error" role="alert">
+                      {connectionError}
+                    </p>
+                  )}
                   {provider === "ollama" && (
                     <p className="fineprint">
                       Install and download a compatible model in Ollama
@@ -1326,6 +1480,42 @@ export default function App() {
                         Dark
                       </button>
                     </div>
+                    <div className="choice-setting">
+                      <div id="companion-label">Desktop companion</div>
+                      <div
+                        className="companion-options"
+                        role="group"
+                        aria-labelledby="companion-label"
+                      >
+                        {[
+                          ["hidden", "In this window"],
+                          ["floating", "Floating 3D companion"],
+                          ["top-edge", "Top edge · experimental"],
+                        ].map(([mode, name]) => (
+                          <button
+                            key={mode}
+                            aria-pressed={companionMode === mode}
+                            disabled={!native}
+                            onClick={async () => {
+                              try {
+                                await command("companion_mode", { mode });
+                                setCompanionMode(mode);
+                              } catch (error) {
+                                setCompanionMode("hidden");
+                                setToast(String(error));
+                              }
+                            }}
+                          >
+                            {name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="fineprint">
+                      Click the companion to return here. Top-edge placement
+                      uses X11 or the optional Duby GNOME extension. KDE Wayland
+                      anchoring is not yet available.
+                    </p>
                     <label className="toggle-row">
                       <div>
                         <strong>Reduced motion</strong>
@@ -1344,19 +1534,44 @@ export default function App() {
                       </div>
                       <VolumeX size={19} />
                     </div>
-                    <div className="toggle-row">
+                    <label className="toggle-row">
                       <div>
                         <strong>Autostart</strong>
-                        <small>Off. Duby opens when you launch it.</small>
+                        <small>
+                          Open Duby when you sign in to this desktop.
+                        </small>
                       </div>
-                      <span className="tag">OFF</span>
-                    </div>
+                      <input
+                        type="checkbox"
+                        checked={autostart}
+                        disabled={!native}
+                        onChange={async (e) => {
+                          try {
+                            await command("set_autostart", {
+                              enabled: e.target.checked,
+                            });
+                            setAutostart(e.target.checked);
+                            void refresh();
+                          } catch (error) {
+                            setToast(String(error));
+                          }
+                        }}
+                      />
+                    </label>
                   </section>
                   <section className="setting-panel">
                     <h2>
                       <Activity size={18} />
                       Device & diagnostics
                     </h2>
+                    {native && (
+                      <button
+                        className="text-button"
+                        onClick={() => void command("quit_app")}
+                      >
+                        Quit Duby
+                      </button>
+                    )}
                     <p>
                       {native
                         ? "Native Linux desktop shell"
@@ -1516,7 +1731,13 @@ export default function App() {
             </label>
             <p className="fineprint">
               A native confirmation will show the exact folder and access. This
-              grant lasts one hour.
+              grant expires after{" "}
+              {grantSeconds === 300
+                ? "five minutes"
+                : grantSeconds === 3600
+                  ? "one hour"
+                  : "eight hours"}{" "}
+              or when Duby closes.
             </p>
             <button
               className="primary full"
@@ -1527,11 +1748,12 @@ export default function App() {
                   const g = await command<Grant>("confirm_folder", {
                     path: folderPath,
                     write: folderWrite,
+                    seconds: grantSeconds,
                   });
                   setGrants((gs) => [...gs, g]);
                   setSelected(g.id);
                   setPathOpen(false);
-                  setToast("Folder access granted for one hour.");
+                  setToast("Folder access granted for your selected duration.");
                 } catch (e) {
                   setToast(String(e));
                 }

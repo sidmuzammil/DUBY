@@ -1,5 +1,5 @@
 {
-  "auditDate": "2026-10-01",
+  "auditDate": "2026-10-02",
   "upstreams": [
     {
       "name": "coucou",
@@ -41,13 +41,10 @@
     "gltfValidator": "2.0.0-dev.3.10"
   },
   "dependencyAudit": {
-    "status": "3 unresolved transitive packages bundled inside npm 11.20.0; release blocker",
-    "affected": [
-      "brace-expansion@5.0.9",
-      "ip-address@10.5.0",
-      "undici@6.28.0"
-    ],
-    "mitigation": "npm execution and package installation are disabled in the exposed runtime; no claim that the advisories are fixed",
-    "testedAlternatives": "npm 11.21.0 and 12.2.0 retain the affected bundled versions; npm overrides do not replace bundled dependencies"
+    "status": "Zero production advisories in the pinned installation",
+    "npm": "11.20.0-duby.1",
+    "patchProvenance": "vendor/npm-patch.json",
+    "patchDescription": "Dependency-only repack: brace-expansion 5.0.12, ip-address 10.7.2, undici 6.28.1. OpenClaw source unchanged.",
+    "validation": "Fresh npm ci, production audit, Gateway fixture and alternate-tool denial"
   }
 }

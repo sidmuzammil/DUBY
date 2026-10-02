@@ -11,3 +11,5 @@ test-results/
 *.blend1
 .DS_Store
 apps/desktop/src-tauri/gen/
+__pycache__/
+*.pyc

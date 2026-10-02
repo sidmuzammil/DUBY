@@ -1495,7 +1495,7 @@
   },
   {
     "name": "brace-expansion",
-    "version": "5.0.9",
+    "version": "5.0.12",
     "license": "MIT",
     "developmentOnly": false
   },
@@ -2377,7 +2377,7 @@
   },
   {
     "name": "ip-address",
-    "version": "10.5.0",
+    "version": "10.7.2",
     "license": "MIT",
     "developmentOnly": false
   },
@@ -2947,7 +2947,7 @@
   },
   {
     "name": "npm",
-    "version": "11.20.0",
+    "version": "11.20.0-duby.1",
     "license": "Artistic-2.0",
     "developmentOnly": false
   },
@@ -3829,7 +3829,7 @@
   },
   {
     "name": "undici",
-    "version": "6.28.0",
+    "version": "6.28.1",
     "license": "MIT",
     "developmentOnly": false
   },

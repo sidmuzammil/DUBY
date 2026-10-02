@@ -6,7 +6,7 @@
   "modelRequests": 3,
   "argumentFragments": 19,
   "interleavedToolCalls": true,
-  "credentialResidueFilesScanned": 18,
+  "credentialResidueFilesScanned": 19,
   "toolsAdvertised": [
     "duby_find",
     "duby_read",

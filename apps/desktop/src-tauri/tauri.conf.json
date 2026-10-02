@@ -22,7 +22,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; connect-src ipc: http://ipc.localhost; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'"
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: asset: http://asset.localhost; connect-src 'self' ipc: http://ipc.localhost; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'"
     }
   },
   "bundle": {
@@ -42,12 +42,14 @@
     "linux": {
       "deb": {
         "depends": [
+          "libc6 (>= 2.41)",
           "libwebkit2gtk-4.1-0",
           "libgtk-3-0t64",
           "libsecret-tools"
         ]
       },
       "rpm": {
+        "depends": ["libc.so.6(GLIBC_2.41)(64bit)"],
         "compression": {
           "type": "none"
         }

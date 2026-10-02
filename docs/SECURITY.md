@@ -9,7 +9,7 @@ This is an unprivileged alpha, with a deliberately small enabled tool surface.
   scheduler, media, setup-agent and MCP routes. A real model-fixture test asks for
   `exec`; the Gateway rejects it and no target is created.
 - Grants originate in native folder selection or a native confirmation of a typed
-  absolute path. They last at most one hour in the UI and disappear at app exit.
+  absolute path. The UI offers five minutes, one hour or eight hours; all disappear at app exit.
   The root filesystem and entire home directory cannot be granted.
 - The broker authenticates its private Unix-socket caller. The directory is 0700,
   the socket 0600, and the token is sent to trusted background components only.
@@ -25,7 +25,9 @@ This is an unprivileged alpha, with a deliberately small enabled tool surface.
 - Task/call IDs and argument fingerprints prevent duplicate mutations. An uncertain
   or failed operation is not automatically replayed. Pause/revoke/stop block future
   admission. An already published small file operation is not rolled back.
-- Provider keys are entered via `secret-tool`, never the renderer. OpenClaw receives
+- Provider keys use `secret-tool` or a native GTK masked session-only dialog, never
+  the renderer. Session keys are held only in the background process and discarded
+  at exit or explicit forgetting. OpenClaw receives
   supported SecretRefs; ordinary config contains references, not secret values.
   Child environments are explicitly constructed, not copied wholesale. Arbitrary
   tool subprocesses and third-party executable plugins are disabled.
@@ -66,13 +68,13 @@ are available. Never point the updater at another project's feed.
 
 ## Reporting and updates
 
-The production dependency audit currently reports **three unresolved packages**
-inside OpenClaw's bundled npm: brace-expansion 5.0.9 (high), undici 6.28.0 (high),
-and ip-address 10.5.0 (moderate). The newer npm 11.21.0 and 12.2.0 packages checked
-retain these versions; npm overrides do not replace their bundled dependencies.
-The exposed runtime cannot execute npm or install packages, but that restriction
-does not constitute a vulnerability fix. See `evidence/npm-audit.json`. Resolving
-and revalidating these advisories is a production-release gate.
+The production dependency audit now reports **zero known advisories** for the
+pinned installation. OpenClaw source is unchanged. Its npm dependency is a marked,
+reproducible repack replacing three vulnerable bundled packages with patched
+upstream releases. `vendor/npm-patch.json` records integrity and provenance;
+`vendor/README.md` and `scripts/repack-npm.mjs` describe every change. Fresh `npm ci`,
+Gateway/tool-denial checks and the production audit are repeated after this change.
+No audit is a guarantee that a package contains no vulnerabilities.
 
 Do not publish secrets or private documents in an issue. Share a redacted diagnostic
 report and minimal fixture. Dependency updates require repinning and rerunning broker,

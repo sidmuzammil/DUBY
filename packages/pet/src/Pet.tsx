@@ -13,7 +13,8 @@ export function Pet({
 }) {
   const ref = useRef<HTMLDivElement>(null),
     control = useRef<{ play: (s: string) => void } | undefined>(undefined),
-    [fallback, setFallback] = useState(false);
+    [fallback, setFallback] = useState(false),
+    [rendered, setRendered] = useState(false);
   useEffect(() => {
     const host = ref.current;
     if (!host) return;
@@ -54,13 +55,21 @@ export function Pet({
       until = 0,
       last = 0;
     let clips: THREE.AnimationClip[] = [];
+    let firstFrame = false;
+    const renderFrame = () => {
+      renderer.render(scene, camera);
+      if (model && !firstFrame) {
+        firstFrame = true;
+        setRendered(true);
+      }
+    };
     const draw = (time: number) => {
       frame = 0;
       if (disposed || !visible || document.hidden) return;
       const delta = Math.min((time - last) / 1000, 0.05);
       last = time;
       if (!reduced) mixer?.update(delta);
-      renderer.render(scene, camera);
+      renderFrame();
       if (!reduced && (gallery || time < until))
         frame = requestAnimationFrame(draw);
     };
@@ -95,6 +104,10 @@ export function Pet({
         clips = g.animations;
         mixer = new THREE.AnimationMixer(model);
         control.current?.play(state);
+        // A newly created, unfocused WebKit overlay may defer its first rAF.
+        // Publish one real 3D frame immediately; later frames remain bounded by
+        // visibility and activity, so hidden windows do not run an idle loop.
+        renderFrame();
         host.dataset.loaded = "true";
       },
       undefined,
@@ -160,7 +173,13 @@ export function Pet({
       className="pet-canvas"
       ref={ref}
       role="img"
-      aria-label={`Duby, an ivory robot otter. ${state}.`}
+      aria-label={
+        fallback
+          ? `Duby rendered atlas fallback, ${state}.`
+          : rendered
+            ? `Duby 3D companion, ${state}.`
+            : "Loading Duby"
+      }
     >
       {fallback && (
         <svg

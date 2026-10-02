@@ -77,3 +77,32 @@ test("keyboard navigation, reduced motion and responsive layout", async ({
     ),
   ).toBe(true);
 });
+
+test("small companion window renders the actual 3D asset", async ({ page }) => {
+  await page.setViewportSize({ width: 210, height: 238 });
+  await page.addInitScript(() => {
+    (window as unknown as { __DUBY_COMPANION__: boolean }).__DUBY_COMPANION__ =
+      true;
+  });
+  await page.goto("/");
+  await expect(
+    page.getByRole("img", {
+      name: "Duby 3D companion, available.",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator('.pet-canvas[data-loaded="true"]')).toBeVisible();
+  expect(await page.locator(".pet-canvas").boundingBox()).toMatchObject({
+    x: 0,
+    y: 0,
+    width: 210,
+    height: 216,
+  });
+  await expect(
+    page.getByRole("button", { name: "Open Duby", exact: true }),
+  ).toBeVisible();
+  const caption = page.getByText("A little help, close by", { exact: true });
+  await expect(caption).toBeVisible();
+  const bounds = (await caption.boundingBox())!;
+  expect(bounds.y + bounds.height).toBeLessThanOrEqual(238);
+});

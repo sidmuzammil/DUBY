@@ -30,7 +30,8 @@
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "three": "0.186.1",
-    "zod": "4.6.5"
+    "zod": "4.6.5",
+    "npm": "file:vendor/npm-11.20.0-duby.1.tgz"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
@@ -46,5 +47,8 @@
     "typescript": "7.0.2",
     "vite": "8.3.2",
     "vitest": "5.0.3"
+  },
+  "overrides": {
+    "npm": "$npm"
   }
 }

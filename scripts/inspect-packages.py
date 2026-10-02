@@ -7,6 +7,7 @@ import json
 import pathlib
 import subprocess
 import tarfile
+import tempfile
 import rpmfile
 
 root = pathlib.Path('.artifacts/packages')
@@ -33,12 +34,30 @@ def inspect_entries(entries):
 
 reports = []
 for path in sorted(root.iterdir()):
-    if path.suffix not in ['.deb', '.rpm']:
+    if path.suffix not in ['.deb', '.rpm', '.AppImage']:
         continue
     with path.open('rb') as stream:
         checksum = digest(stream)
-    if path.suffix == '.rpm':
+    if path.suffix == '.AppImage':
+        with tempfile.TemporaryDirectory(prefix='package-inspect-', dir='.artifacts') as directory:
+            subprocess.run([str(path.resolve()), '--appimage-extract'], cwd=directory, check=True, stdout=subprocess.DEVNULL)
+            app = pathlib.Path(directory) / 'squashfs-root'
+            required = ['usr/bin/duby', 'usr/lib/Duby/runtime.tar.zst', 'usr/lib/Duby/runtime-manifest.json', 'usr/share/applications/Duby.desktop']
+            streams = [(name, (app / name).open('rb')) for name in required]
+            try:
+                inspect_entries(streams)
+            finally:
+                for _, stream in streams:
+                    stream.close()
+            assert (app / 'AppRun').exists()
+            assert not list((app / 'usr/lib').glob('libwebkit2gtk*')), 'Use the host WebKit and its matching helpers'
+            requirements = json.loads((app / 'usr/share/duby/runtime-requirements.json').read_text())
+            assert 'libwebkit2gtk-4.1.so.0' in requirements['hostLibraries']
+            assert (app / 'usr/share/duby/gnome/duby@sidmuzammil.github.io/extension.js').is_file()
+            count = sum(1 for entry in app.rglob('*') if entry.is_file())
+    elif path.suffix == '.rpm':
         with rpmfile.open(str(path)) as rpm:
+            assert b'libc.so.6(GLIBC_2.41)(64bit)' in rpm.headers['requirename']
             if 'archive_compression' not in rpm.headers:
                 # rpmfile 2.1.0 assumes gzip for this valid uncompressed RPM case.
                 # Confirm raw CPIO magic before using its ordinary CPIO parser.
@@ -49,6 +68,8 @@ for path in sorted(root.iterdir()):
                 rpm._data_file = io.BytesIO(raw)
             count = inspect_entries((m.name, rpm.extractfile(m)) for m in rpm.getmembers())
     else:
+        depends = subprocess.check_output(['dpkg-deb', '-f', str(path), 'Depends'], text=True)
+        assert 'libc6 (>= 2.41)' in depends
         process = subprocess.Popen(['dpkg-deb', '--fsys-tarfile', str(path)], stdout=subprocess.PIPE)
         with tarfile.open(fileobj=process.stdout, mode='r|') as archive:
             count = inspect_entries((m.name, archive.extractfile(m)) for m in archive if m.isfile())

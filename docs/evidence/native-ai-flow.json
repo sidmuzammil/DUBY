@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "model": "local deterministic HTTP fixture, not live inference",
+  "packagedBinary": "/workspace/DUBY/.artifacts/appimage-installed/squashfs-root/AppRun",
+  "nativeCredentialDialog": true,
+  "rendererReceivesKey": false,
+  "toolFlow": [
+    "duby_read",
+    "duby_save"
+  ],
+  "outputContentVerified": true,
+  "restartHistoryRecovery": true,
+  "grantsRestored": false,
+  "recoveryModelRequests": 0,
+  "credentialResidueFilesScanned": 163,
+  "providerPayments": 0,
+  "modelRequests": 3
+}

@@ -1,5 +1,8 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 mod bundled_runtime;
+mod companion;
+mod preferences;
+mod session;
 use duby_broker::{Broker, Request};
 use serde_json::{json, Value};
 use std::{
@@ -25,6 +28,7 @@ struct AppState {
     data: PathBuf,
     socket: PathBuf,
     token: String,
+    session_connections: Mutex<Vec<gio::DBusConnection>>,
 }
 fn rpc(app: &tauri::AppHandle, s: &AppState, method: &str, args: Value) -> Reply {
     let mut guard = s.bridge.lock().map_err(|e| e.to_string())?;
@@ -80,6 +84,7 @@ fn rpc(app: &tauri::AppHandle, s: &AppState, method: &str, args: Value) -> Reply
                         if let (Some(task), Some(status)) =
                             (v["data"]["taskId"].as_str(), v["data"]["state"].as_str())
                         {
+                            let _ = broker.lock().unwrap().observe_task(task, status);
                             if status == "paused" {
                                 let _ = broker.lock().unwrap().control(task, "paused");
                             }
@@ -124,26 +129,71 @@ fn rpc(app: &tauri::AppHandle, s: &AppState, method: &str, args: Value) -> Reply
         .map_err(|_| "AI runtime timed out; no operation was automatically retried".to_string())?
 }
 #[tauri::command]
-async fn snapshot(state: State<'_, AppState>) -> Reply {
+async fn snapshot(app: tauri::AppHandle, state: State<'_, AppState>) -> Reply {
     let s = state.broker.lock().unwrap();
     Ok(
-        json!({"grants":s.grants(),"journal":s.journal()?,"memories":s.memories()?,"capabilities":duby_platform::capabilities()}),
+        json!({"grants":s.grants(),"journal":s.journal()?,"memories":s.memories()?,"tasks":s.task_index()?,"autostart":preferences::autostart_enabled(&app.path().config_dir().map_err(|e| e.to_string())?),"capabilities":duby_platform::capabilities()}),
     )
 }
 #[tauri::command]
-async fn choose_folder(app: tauri::AppHandle, state: State<'_, AppState>, write: bool) -> Reply {
+fn set_autostart(app: tauri::AppHandle, enabled: bool) -> Result<(), String> {
+    preferences::autostart(
+        &app.path().config_dir().map_err(|e| e.to_string())?,
+        &preferences::launch_executable()?,
+        enabled,
+    )
+}
+#[tauri::command]
+fn companion_mode(app: tauri::AppHandle, window: tauri::WebviewWindow, mode: String) -> Reply {
+    if window.label() != "main" {
+        return Err("Open Settings to change companion mode".into());
+    }
+    companion::set_mode(&app, &mode)
+}
+#[tauri::command]
+fn show_main(app: tauri::AppHandle) -> Result<(), String> {
+    let main = app
+        .get_webview_window("main")
+        .ok_or("Main window unavailable")?;
+    main.show().map_err(|e| e.to_string())?;
+    main.unminimize().map_err(|e| e.to_string())?;
+    main.set_focus().map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn quit_app(app: tauri::AppHandle) {
+    app.exit(0);
+}
+fn grant_duration(seconds: u64) -> Result<&'static str, String> {
+    match seconds {
+        300 => Ok("five minutes"),
+        3600 => Ok("one hour"),
+        28800 => Ok("eight hours"),
+        _ => Err("Choose a supported access duration".into()),
+    }
+}
+#[tauri::command]
+async fn choose_folder(
+    app: tauri::AppHandle,
+    state: State<'_, AppState>,
+    write: bool,
+    seconds: u64,
+) -> Reply {
+    let duration = grant_duration(seconds)?;
     let selected = app
         .dialog()
         .file()
-        .set_title(if write {
-            "Allow Duby to read and create files in this folder for one hour"
-        } else {
-            "Allow Duby to read files in this folder for one hour"
-        })
+        .set_title(format!(
+            "Allow Duby to {} in this folder for {duration}",
+            if write {
+                "read and create files"
+            } else {
+                "read files"
+            }
+        ))
         .blocking_pick_folder()
         .ok_or("Folder selection cancelled")?;
     let path = selected.into_path().map_err(|e| e.to_string())?;
-    let g = state.broker.lock().unwrap().grant(&path, write, 3600)?;
+    let g = state.broker.lock().unwrap().grant(&path, write, seconds)?;
     Ok(serde_json::to_value(g).unwrap())
 }
 #[tauri::command]
@@ -152,7 +202,9 @@ async fn confirm_folder(
     state: State<'_, AppState>,
     path: String,
     write: bool,
+    seconds: u64,
 ) -> Reply {
+    let duration = grant_duration(seconds)?;
     if path.len() > 4096 || !std::path::Path::new(&path).is_absolute() {
         return Err("Enter an absolute folder path".into());
     }
@@ -161,7 +213,7 @@ async fn confirm_folder(
     } else {
         "read files"
     };
-    let approved=app.dialog().message(format!("Allow Duby to {scope} in this folder for one hour?\n\n{path}\n\nExisting files are not overwritten. Access can be revoked from Access & privacy.")).title("Share this folder with Duby?").buttons(tauri_plugin_dialog::MessageDialogButtons::OkCancel).blocking_show();
+    let approved=app.dialog().message(format!("Allow Duby to {scope} in this folder for {duration}?\n\n{path}\n\nExisting files are not overwritten. Access ends when Duby closes and can be revoked from Access & privacy.")).title("Share this folder with Duby?").buttons(tauri_plugin_dialog::MessageDialogButtons::OkCancel).blocking_show();
     if !approved {
         return Err("Folder access was not granted".into());
     }
@@ -169,7 +221,7 @@ async fn confirm_folder(
         .broker
         .lock()
         .unwrap()
-        .grant(std::path::Path::new(&path), write, 3600)?;
+        .grant(std::path::Path::new(&path), write, seconds)?;
     Ok(serde_json::to_value(g).unwrap())
 }
 #[tauri::command]
@@ -216,6 +268,85 @@ async fn ai_connect(app: tauri::AppHandle, config: Value) -> Reply {
     .map_err(|e| e.to_string())?
 }
 #[tauri::command]
+async fn ai_history(app: tauri::AppHandle, task: String) -> Reply {
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = app.state::<AppState>();
+        if !s.broker.lock().unwrap().known_task(&task)? {
+            return Err("No Duby conversation with that identity".into());
+        }
+        rpc(&app, &s, "history", json!({"task":task}))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn ai_preferences(app: tauri::AppHandle) -> Reply {
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = app.state::<AppState>();
+        rpc(&app, &s, "preferences", json!({}))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn session_credential(app: tauri::AppHandle, provider: String) -> Reply {
+    if !["openai", "anthropic", "google", "custom"].contains(&provider.as_str()) {
+        return Err("Choose a provider that uses a key".into());
+    }
+    let (tx, rx) = mpsc::channel();
+    let handle = app.clone();
+    let label = provider.clone();
+    app.run_on_main_thread(move || {
+        use gtk::prelude::*;
+        let parent = handle.get_webview_window("main").and_then(|w| w.gtk_window().ok());
+        let dialog = gtk::Dialog::with_buttons(Some("Duby · session credential"), parent.as_ref(), gtk::DialogFlags::MODAL,
+            &[("Cancel", gtk::ResponseType::Cancel), ("Use for this session", gtk::ResponseType::Accept)]);
+        dialog.set_default_size(440, 170);
+        let body = dialog.content_area();
+        body.set_spacing(14);
+        body.set_margin_start(20); body.set_margin_end(20); body.set_margin_top(20); body.set_margin_bottom(20);
+        let description = gtk::Label::new(Some(&format!("{label} API key\nKept in memory until Duby closes or you forget it.\nThis native dialog sends no key to the web interface.")));
+        let entry = gtk::Entry::new();
+        entry.set_visibility(false);
+        entry.set_input_purpose(gtk::InputPurpose::Password);
+        entry.set_max_length(8192);
+        body.pack_start(&description, false, false, 0);
+        body.pack_start(&entry, false, false, 0);
+        dialog.show_all();
+        entry.grab_focus();
+        let accepted = dialog.run() == gtk::ResponseType::Accept;
+        let value = if accepted { Some(entry.text().to_string()) } else { None };
+        entry.set_text("");
+        dialog.close();
+        let _ = tx.send(value);
+    }).map_err(|e| e.to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let value = rx
+            .recv()
+            .map_err(|_| "Credential dialog closed")?
+            .ok_or("Credential entry cancelled")?;
+        let s = app.state::<AppState>();
+        rpc(
+            &app,
+            &s,
+            "credential",
+            json!({"provider":provider,"value":value}),
+        )
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn forget_session_credentials(app: tauri::AppHandle) -> Reply {
+    tauri::async_runtime::spawn_blocking(move || {
+        let s = app.state::<AppState>();
+        s.broker.lock().unwrap().pause_all();
+        rpc(&app, &s, "forgetCredentials", json!({}))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
 async fn ai_task(app: tauri::AppHandle, grant: String, prompt: String) -> Reply {
     if prompt.trim().is_empty() || prompt.len() > 16000 {
         return Err("Enter a task of up to 16,000 characters".into());
@@ -224,8 +355,14 @@ async fn ai_task(app: tauri::AppHandle, grant: String, prompt: String) -> Reply 
         let s = app.state::<AppState>();
         let task = format!("agent:duby:duby:{}", uuid::Uuid::new_v4());
         s.broker.lock().unwrap().task(&task, &grant)?;
+        s.broker.lock().unwrap().record_task(&task, &prompt)?;
         let result = rpc(&app, &s, "send", json!({"task":task,"prompt":prompt}));
-        if result.is_err() {
+        if let Ok(value) = &result {
+            if let Some(run) = value["runId"].as_str() {
+                s.broker.lock().unwrap().bind_run(&task, run)?;
+            }
+        } else {
+            let _ = s.broker.lock().unwrap().observe_task(&task, "error");
             let _ = s.broker.lock().unwrap().control(&task, "cancelled");
         }
         result
@@ -301,12 +438,20 @@ fn main() {
         .setup(setup)
         .invoke_handler(tauri::generate_handler![
             snapshot,
+            set_autostart,
+            companion_mode,
+            show_main,
+            quit_app,
             choose_folder,
             confirm_folder,
             revoke,
             local_files,
             save_result,
             ai_connect,
+            ai_history,
+            ai_preferences,
+            session_credential,
+            forget_session_credentials,
             ai_task,
             task_control,
             remember,
@@ -374,7 +519,22 @@ fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         data,
         socket,
         token,
+        session_connections: Mutex::new(Vec::new()),
     });
+    *app.state::<AppState>().session_connections.lock().unwrap() = session::watch(app.handle());
+    if let Some(main) = app.get_webview_window("main") {
+        let handle = app.handle().clone();
+        main.on_window_event(move |event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                if handle.get_webview_window("companion").is_some() {
+                    api.prevent_close();
+                    if let Some(panel) = handle.get_webview_window("main") {
+                        let _ = panel.hide();
+                    }
+                }
+            }
+        });
+    }
     Ok(())
 }
 fn shutdown(app: &tauri::AppHandle, event: tauri::RunEvent) {

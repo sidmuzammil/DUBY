@@ -75,15 +75,19 @@ these totals rather than hidden behind a renderer-only figure.
 
 ## Publication and environment limits
 
-GitHub rejects this environment's push to `sidmuzammil/DUBY` with HTTP 403: the
-configured `Protectol` identity lacks repository write access. There is no alternate
-authenticated account. Source is preserved in local Git commits and the portable
-`.artifacts/packages/Duby-source.bundle`, with a source ZIP and the installers in
-the same directory. No published GitHub update or Release is claimed.
+Source publication is complete at https://github.com/sidmuzammil/DUBY. GitHub's API
+authenticated as `sidmuzammil` and confirmed repository write access. The cloud Git
+push route still used `Protectol`, so the Git Database API published the source while
+preserving all four original commit IDs, including `ae84370`. The initial publication
+merge `96ab415ce1d82a128fa1cf93a1c0f2ced9361949` has the exact verified source tree
+`25eeae248e2fb919d07b395c5c320f040250657f`; the initialization commit remains in history.
+The branch was updated with fast-forward enforcement and checked again through the API.
 
-The GitHub release API and Ollama model registry also returned Forbidden. No live
-local or hosted inference was run. The reusable cloud configuration is saved as a
-draft; this does not publish the repository or prove restoration in a fresh task.
+The portable `.artifacts/packages/Duby-source.bundle`, source ZIP and installers
+remain in the build workspace. No GitHub Release or installer assets were uploaded.
+The Ollama model registry remains an unavailable check; no live local or hosted
+inference was run. The reusable cloud configuration is saved as a draft; fresh-task
+environment restoration has not been independently verified.
 
 ## Remaining specification work
 

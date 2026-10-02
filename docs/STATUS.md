@@ -67,11 +67,11 @@ a completed flagship release**. The following distinctions are intentional.
 
 No compatible model weights were available. The official Ollama binary was checksum
 verified, but `registry.ollama.ai` denied the model pull. No hosted inference was
-purchased or used. `api.github.com` was also denied, preventing release creation;
-Git remote reads work, but push returned HTTP 403: the connected `Protectol` identity
-does not have write access to `sidmuzammil/DUBY`. The source is locally committed and
-a portable Git bundle is provided. These are environment limits, not
-reasons to claim live provider or release-publishing success.
+purchased or used. GitHub API access was subsequently restored for `sidmuzammil`;
+the source and complete original Git history are now published at
+https://github.com/sidmuzammil/DUBY. A portable source bundle and local installers
+are also preserved. No GitHub Release, uploaded installer assets, or live model
+validation is claimed by this source publication.
 
 ## Remaining specification work
 

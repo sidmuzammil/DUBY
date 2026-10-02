@@ -109,11 +109,10 @@ compatibility. The AppImage also requires host WebKitGTK 4.1; it does not remove
 this ABI baseline. ARM64 and signed updates remain open.
 
 CI is **manual only** (`workflow_dispatch`); this build did not trigger billed
-GitHub Actions. GitHub rejected this environment's push: its `Protectol` identity
-lacks write access to `sidmuzammil/DUBY`. The source is committed locally; a portable
-Git bundle and generated installers are preserved in `.artifacts/packages/`.
-The GitHub release API was also blocked. No published repository update or
-downloadable GitHub Release is claimed until write access is restored.
+GitHub Actions. The source and complete development history are published at
+[sidmuzammil/DUBY](https://github.com/sidmuzammil/DUBY). A portable Git bundle and
+generated installers are preserved in `.artifacts/packages/` in the build workspace.
+No downloadable GitHub Release or installer assets have been published yet.
 
 ## Read more
 

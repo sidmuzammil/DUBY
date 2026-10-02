@@ -110,14 +110,15 @@ binary. Moving that launcher later requires toggling autostart off and on again.
 
 The GitHub workflow is manually dispatched. Building it may consume the repository
 owner's Actions allowance. No workflow was triggered, and no billing setting changed.
-Do not put large installers into Git history. Upload them to a reviewed release only
-when the GitHub API is available; this cloud environment returned Forbidden.
+Do not put large installers into Git history. Publish installers as release assets
+after reviewing the release gates; no GitHub Release was created during this build.
 
-The attempted push to `sidmuzammil/DUBY` was denied to the configured `Protectol`
-identity. No alternate GitHub login is configured. Local commits and
-`.artifacts/packages/Duby-source.bundle` preserve the source. With repository write
-credentials restored, publish the existing checkout with `git push -u origin main`.
-The bundle can also be cloned with `git clone Duby-source.bundle Duby`.
+Source and all original development commits are published at `sidmuzammil/DUBY`.
+The authenticated GitHub API provided write access as `sidmuzammil` while this
+cloud's Git push route still used another account. Publication preserved commit and
+tree hashes and updated the branch with fast-forward enforcement. Ordinary Git
+fetch works; future Git pushes require the connected account to have write access.
+The portable backup can also be cloned with `git clone Duby-source.bundle Duby`.
 
 ## Recovery and uninstall
 
